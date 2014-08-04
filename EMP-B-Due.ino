@@ -28,13 +28,11 @@
     int estbt_datador;
     int estbta_datador = HIGH;
     long atr_datador = 0;
-  // Estado Inicial de Saídas
-    int est_led_geral = LOW;
-    int est_led_dosador = LOW;
-    int est_led_datador = LOW;
   // Programa
     boolean stand_by = false;
     boolean maquina_ligada = false;
+    boolean dosador_ligado = false;
+    boolean datador_ligado = false;
 
 
 void setup() {
@@ -47,26 +45,27 @@ void setup() {
   pinMode(led_datador, OUTPUT);
 
   // Define estado inicial das saídas
-  digitalWrite(led_geral, est_led_geral);
-  digitalWrite(led_dosador, est_led_dosador);
-  digitalWrite(led_datador, est_led_datador);
+  digitalWrite(led_geral, LOW);
+  digitalWrite(led_dosador, LOW);
+  digitalWrite(led_datador, LOW);
 }
 
 
 void loop() {
   standBy();
+  modoTeste();
 }
 
 void acionaGeral(){
-  btUmClique(bt_geral, &estbt_geral, &estbta_geral, &atr_geral, led_geral, &est_led_geral);
+  btUmClique(bt_geral, &estbt_geral, &estbta_geral, &atr_geral, &maquina_ligada);
 }
 
 void acionaDosador(){
-  btUmClique(bt_dosador, &estbt_dosador, &estbta_dosador, &atr_dosador, led_dosador, &est_led_dosador);
+  btUmClique(bt_dosador, &estbt_dosador, &estbta_dosador, &atr_dosador, &dosador_ligado);
 }
 
 void acionaDatador(){
-  btUmClique(bt_datador, &estbt_datador, &estbta_datador, &atr_datador, led_datador, &est_led_datador);
+  btUmClique(bt_datador, &estbt_datador, &estbta_datador, &atr_datador, &datador_ligado);
 }
 
 void standBy(){
@@ -87,7 +86,7 @@ void iniciaTrabalho(){
 
 }
 
-void btUmClique(byte botao, int *estado, int *est_ant, long *atr_ant, byte saida, int *est_saida ){
+void btUmClique(byte botao, int *estado, int *est_ant, long *atr_ant, boolean *funcao){
   byte leitura = leEntrada(botao);
   if (leitura != *est_ant) {
     *atr_ant = millis();
@@ -97,11 +96,11 @@ void btUmClique(byte botao, int *estado, int *est_ant, long *atr_ant, byte saida
     if (leitura != *estado) {
       *estado = leitura;
       if (*estado == LOW) {
-        *est_saida = !*est_saida;
+        *funcao = !*funcao;
       }
     }
   }
-  digitalWrite(saida, *est_saida);
+  // digitalWrite(saida, *est_saida);
   *est_ant = leitura;
 }
 
@@ -109,3 +108,29 @@ byte leEntrada(byte pino){
   return digitalRead(pino);
 }
 
+void liga(byte saida){
+  digitalWrite(saida, HIGH);
+}
+
+void desliga(byte saida){
+  digitalWrite(saida, LOW);
+}
+
+
+void modoTeste(){
+  if (maquina_ligada){
+    liga(led_geral);
+  } else {
+    desliga(led_geral);
+  }
+  if (dosador_ligado){
+    liga(led_dosador);
+  } else {
+    desliga(led_dosador);
+  }
+  if (datador_ligado){
+    liga(led_datador);
+  } else {
+    desliga(led_datador);
+  }
+}
