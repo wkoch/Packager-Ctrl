@@ -5,100 +5,62 @@
  Controlador de Empacotadeira com Arduino Due.
 */
 
-// Constantes de Entradas
-const byte botao_geral = 22;
-int estado_botao_geral;
-int estado_botao_geral_anterior = HIGH;
-long atraso_geral_anterior = 0;
-
-const byte indicador_geral = 25;
-int estado_indicador_geral = LOW;
-
-
-const byte botao_dosador = 26;
-int estado_botao_dosador;
-int estado_botao_dosador_anterior = HIGH;
-long atraso_dosador_anterior = 0;
-
-const byte indicador_dosador = 29;
-int estado_indicador_dosador = LOW;
+// Constantes
+  // Entradas
+    const byte bt_geral = 22; // Entrada do botão de Liga/Desliga Geral
+    const byte bt_dosador = 26; // Entrada do botão de Liga/Desliga do Dosador
+  // Saídas
+    const byte led_geral = 25; // Saída Geral
+    const byte led_dosador = 29; // Saída do Dosador
 
 
+// Variáveis
+  // Botões de Entrada Um Clique
+    long atraso = 50;
+    int est_bt_geral;
+    int est_bt_geral_ant = HIGH;
+    long atr_geral_ant = 0;
+    int est_bt_dosador;
+    int est_bt_dosador_ant = HIGH;
+    long atr_dosador = 0;
+  // Estado Inicial de Saídas
+    int est_led_geral = LOW;
+    int est_led_dosador = LOW;
 
-long atraso = 50;
 
 void setup() {
-  pinMode(botao_geral, INPUT_PULLUP);
-  pinMode(botao_dosador, INPUT_PULLUP);
+  pinMode(bt_geral, INPUT_PULLUP);
+  pinMode(bt_dosador, INPUT_PULLUP);
 
-  pinMode(indicador_geral, OUTPUT);
-  pinMode(indicador_dosador, OUTPUT);
+  pinMode(led_geral, OUTPUT);
+  pinMode(led_dosador, OUTPUT);
 
-  // set initial LED state
-  digitalWrite(indicador_geral, estado_indicador_geral);
-  digitalWrite(indicador_dosador, estado_indicador_dosador);
+  // Define estado inicial das saídas
+  digitalWrite(led_geral, est_led_geral);
+  digitalWrite(led_dosador, est_led_dosador);
 }
 
 
 void loop() {
-  botao_um_clique(botao_geral, &estado_botao_geral, &estado_botao_geral_anterior, &atraso_geral_anterior, indicador_geral, &estado_indicador_geral);
-  botao_um_clique(botao_dosador, &estado_botao_dosador, &estado_botao_dosador_anterior, &atraso_dosador_anterior, indicador_dosador, &estado_indicador_dosador);
+  botaoUmClique(bt_geral, &est_bt_geral, &est_bt_geral_ant, &atr_geral_ant, led_geral, &est_led_geral);
+  botaoUmClique(bt_dosador, &est_bt_dosador, &est_bt_dosador_ant, &atr_dosador, led_dosador, &est_led_dosador);
 }
 
 
-void botao_um_clique(byte botao, int *estado, int *estado_anterior, long *atraso_anterior, byte saida, int *estado_saida ){
+void botaoUmClique(byte botao, int *estado, int *est_ant, long *atr_ant, byte saida, int *est_saida ){
   int reading = digitalRead(botao);
-  if (reading != *estado_anterior) {
-    *atraso_anterior = millis();
+  if (reading != *est_ant) {
+    *atr_ant = millis();
   }
 
-  if ((millis() - *atraso_anterior) > atraso) {
+  if ((millis() - *atr_ant) > atraso) {
     if (reading != *estado) {
       *estado = reading;
       if (*estado == LOW) {
-        *estado_saida = !*estado_saida;
+        *est_saida = !*est_saida;
       }
     }
   }
-  digitalWrite(saida, *estado_saida);
-  *estado_anterior = reading;
+  digitalWrite(saida, *est_saida);
+  *est_ant = reading;
 }
-
-
-
-// void botao_maquina(){
-//   // read the state of the switch into a local variable:
-//   int reading = digitalRead(buttonPin);
-
-//   // check to see if you just pressed the button
-//   // (i.e. the input went from LOW to HIGH),  and you've waited
-//   // long enough since the last press to ignore any noise:
-
-//   // If the switch changed, due to noise or pressing:
-//   if (reading != lastButtonState) {
-//     // reset the debouncing timer
-//     lastDebounceTime = millis();
-//   }
-
-//   if ((millis() - lastDebounceTime) > debounceDelay) {
-//     // whatever the reading is at, it's been there for longer
-//     // than the debounce delay, so take it as the actual current state:
-
-//     // if the button state has changed:
-//     if (reading != buttonState) {
-//       buttonState = reading;
-
-//       // only toggle the LED if the new button state is HIGH
-//       if (buttonState == LOW) {
-//         ledState = !ledState;
-//       }
-//     }
-//   }
-
-//   // set the LED:
-//   digitalWrite(ledPin, ledState);
-
-//   // save the reading.  Next time through the loop,
-//   // it'll be the lastButtonState:
-//   lastButtonState = reading;
-// }
