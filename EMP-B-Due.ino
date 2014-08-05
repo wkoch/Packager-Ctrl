@@ -1,6 +1,6 @@
 /*
  EMP-B Due
- V0.1 © 03/08/2014 William Koch
+ V0.1 03/08/2014 William Koch
 
  Controlador de Empacotadeira com Arduino Due.
 */
@@ -10,21 +10,27 @@
     const byte bt_geral = 22; // Entrada do botão de Liga/Desliga Geral
     const byte bt_dosador = 24; // Entrada do botão de Liga/Desliga do Dosador
     const byte bt_datador = 26; // Entrada do botão de Liga/Desliga do Datador
-    const byte sensor_porta = 48;
-    const byte sensor_painel = 50;
-    const byte sensor_maquina = 52;
+    const byte sensor_porta = 48; // Sensor de Segurança da Porta Frontal
+    const byte sensor_painel = 50; // Sensor de Segurança da Porta do Painel
+    const byte sensor_maquina = 52; // Sensor de Segurança da Porta da Máquina
+    const byte pot_solda_vertical = A0; // Potenciômetro da Solda Vertical
+    const byte pot_solda_horizontal = A1; // Potenciômetro da Solda Vertical
+    const byte pot_solda_datador = A2; // Potenciômetro da Solda Vertical
   // Saídas
     const byte led_geral = 23; // Saída Geral
     const byte led_dosador = 25; // Saída do Dosador
     const byte led_datador = 27; // Saída do Datador
+    const byte solda_vertical = 33; // Saída da Solda Vertical
+    const byte solda_horizontal = 35; // Saída da Solda Horizontal
+    const byte solda_datador = 37; // Saída da Solda do Datador
 
 
 // Variáveis
   // Configurações
     #define ModoBotoes INPUT_PULLUP // INPUT ou INPUT_PULLUP
     #define ModoLeds OUTPUT
-    #define ALTO LOW // Inverter para INPUT_PULLUP
-    #define BAIXO HIGH // Inverter para INPUT_PULLUP
+    #define ALTO LOW // Deve ser invertido para INPUT_PULLUP
+    #define BAIXO HIGH // Deve ser invertido para INPUT_PULLUP
     #define LIGA HIGH
     #define DESLIGA LOW
     #define VERDADEIRO true
@@ -33,6 +39,9 @@
     #define NomeGeral "Geral"
     #define NomeDosador "Dosador"
     #define NomeDatador "Datador"
+    #define NomeSoldaVertical "Solda Vertical"
+    #define NomeSoldaHorizontal "Solda Horizontal"
+    #define NomeSoldaDatador "Solda Datador"
   // Botões de Entrada Um Clique
     unsigned long atraso = 50;
     int estbt_geral; // Estado do Botão Geral
@@ -44,6 +53,11 @@
     int estbt_datador; // Estado do Botão Datador
     int estbta_datador = BAIXO; // Estado anterior do Botão Dosador
     unsigned long atr_datador = 0; // Atraso do Botão Dosador
+  // PWM das Soldas
+    const unsigned long ciclo_PWM = 1000;
+    unsigned long tempo_PWM_vertical = 0; // Tempo do PWM da solda vertical
+    unsigned long tempo_PWM_horizontal = 0; // Tempo do PWM da solda horizontal
+    unsigned long tempo_PWM_datador = 0; // Tempo do PWM da solda do Datador
   // Programa
     boolean stand_by = FALSO;
     boolean maquina_ligada = FALSO;
@@ -58,6 +72,14 @@ void setup() {
   pinMode(bt_geral, ModoBotoes);
   pinMode(bt_dosador, ModoBotoes);
   pinMode(bt_datador, ModoBotoes);
+  // Potenciômetros
+  pinMode(pot_solda_vertical, INPUT);
+  pinMode(pot_solda_horizontal, INPUT);
+  pinMode(pot_solda_horizontal, INPUT);
+  // PWM
+  pinMode(solda_vertical, OUTPUT);
+  pinMode(solda_horizontal, OUTPUT);
+  pinMode(solda_datador, OUTPUT);
   // Sensores
   pinMode(sensor_porta, ModoBotoes);
   pinMode(sensor_painel, ModoBotoes);
@@ -80,6 +102,20 @@ void loop() {
   if (!alarme_ativo){
     standBy();
     modoTeste();
+  }
+}
+
+void geraPWM(byte pot, unsigned long *inicio, byte saida, String nome){
+  unsigned long ativo = map(analogRead(pot), 0, 1023, 0, ciclo_PWM);
+  unsigned long inativo = ciclo_PWM - ativo;
+  if (millis() > *inicio && millis() <= (*inicio + ativo)){
+    liga(saida, nome);
+    // digitalWrite(led, HIGH);
+  } else if (millis() > (*inicio + ativo) && millis() < (*inicio + ciclo_PWM)){
+    desliga(saida, nome);
+    // digitalWrite(led, LOW);
+  } else if (millis() >= (*inicio + ciclo_PWM)) {
+    *inicio = millis();
   }
 }
 
@@ -114,7 +150,9 @@ void standBy(){
 }
 
 void iniciaTrabalho(){
-
+  geraPWM(pot_solda_vertical, &tempo_PWM_vertical, solda_vertical, NomeSoldaVertical);
+  geraPWM(pot_solda_horizontal, &tempo_PWM_horizontal, solda_horizontal, NomeSoldaHorizontal);
+  geraPWM(pot_solda_datador, &tempo_PWM_datador, solda_datador, NomeSoldaDatador);
 }
 
 void modoAlarme(){
