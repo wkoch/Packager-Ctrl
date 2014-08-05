@@ -28,15 +28,15 @@
     #define FALSO false
   // Botões de Entrada Um Clique
     long atraso = 50;
-    int estbt_geral;
-    int estbta_geral = BAIXO;
-    long atr_geral = 0;
-    int estbt_dosador;
-    int estbta_dosador = BAIXO;
-    long atr_dosador = 0;
-    int estbt_datador;
-    int estbta_datador = BAIXO;
-    long atr_datador = 0;
+    int estbt_geral; // Estado do Botão Geral
+    int estbta_geral = BAIXO; // Estado anterior do Botão Geral
+    long atr_geral = 0; // Atraso do Botão Geral
+    int estbt_dosador; // Estado do Botão Dosador
+    int estbta_dosador = BAIXO; // Estado anterior do Botão Dosador
+    long atr_dosador = 0; // Atraso do Botão Dosador
+    int estbt_datador; // Estado do Botão Datador
+    int estbta_datador = BAIXO; // Estado anterior do Botão Dosador
+    long atr_datador = 0; // Atraso do Botão Dosador
   // Programa
     boolean stand_by = FALSO;
     boolean maquina_ligada = FALSO;
@@ -45,6 +45,7 @@
 
 
 void setup() {
+  Serial.begin(9600);
   pinMode(bt_geral, ModoBotoes);
   pinMode(bt_dosador, ModoBotoes);
   pinMode(bt_datador, ModoBotoes);
@@ -116,29 +117,57 @@ byte leEntrada(byte pino){
   return digitalRead(pino);
 }
 
-void liga(byte saida){
-  digitalWrite(saida, LIGA);
+void liga(byte saida, String texto){
+  if (desligado(saida)){
+    digitalWrite(saida, LIGA);
+    escreveSerial("Ligado " + texto + ".");
+  }
 }
 
-void desliga(byte saida){
-  digitalWrite(saida, DESLIGA);
+void desliga(byte saida, String texto){
+  if (ligado(saida)){
+    digitalWrite(saida, DESLIGA);
+    escreveSerial("Desligado " + texto + ".");
+  }
+}
+
+boolean ligado(byte saida){
+  if (digitalRead(saida) == LIGA){
+    return VERDADEIRO;
+  } else {
+    return FALSO;
+  }
+}
+
+boolean desligado(byte saida){
+  if (digitalRead(saida) == DESLIGA){
+    return VERDADEIRO;
+  } else {
+    return FALSO;
+  }
+}
+
+void escreveSerial(String texto){
+  if (Serial){
+    Serial.println(texto);
+  }
 }
 
 
 void modoTeste(){
   if (maquina_ligada){
-    liga(led_geral);
+    liga(led_geral, "Led Geral");
   } else {
-    desliga(led_geral);
+    desliga(led_geral, "Led Geral");
   }
   if (dosador_ligado){
-    liga(led_dosador);
+    liga(led_dosador, "Led Dosador");
   } else {
-    desliga(led_dosador);
+    desliga(led_dosador, "Led Dosador");
   }
   if (datador_ligado){
-    liga(led_datador);
+    liga(led_datador, "Led Datador");
   } else {
-    desliga(led_datador);
+    desliga(led_datador, "Led Datador");
   }
 }
