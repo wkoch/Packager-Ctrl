@@ -18,30 +18,30 @@
 
 // Variáveis
   // Configurações
-    #define ModoBotoes INPUT_PULLUP
+    #define ModoBotoes INPUT_PULLUP // INPUT ou INPUT_PULLUP
     #define ModoLeds OUTPUT
-    #define SinalAlto LOW
-    #define SinalBaixo HIGH
-    #define SaidaLigada HIGH
-    #define SaidaDesligada LOW
-    #define Verdadeiro true
-    #define Falso false
+    #define ALTO LOW // Inverter para INPUT_PULLUP
+    #define BAIXO HIGH // Inverter para INPUT_PULLUP
+    #define LIGA HIGH
+    #define DESLIGA LOW
+    #define VERDADEIRO true
+    #define FALSO false
   // Botões de Entrada Um Clique
     long atraso = 50;
     int estbt_geral;
-    int estbta_geral = SinalBaixo;
+    int estbta_geral = BAIXO;
     long atr_geral = 0;
     int estbt_dosador;
-    int estbta_dosador = SinalBaixo;
+    int estbta_dosador = BAIXO;
     long atr_dosador = 0;
     int estbt_datador;
-    int estbta_datador = SinalBaixo;
+    int estbta_datador = BAIXO;
     long atr_datador = 0;
   // Programa
-    boolean stand_by = Falso;
-    boolean maquina_ligada = Falso;
-    boolean dosador_ligado = Falso;
-    boolean datador_ligado = Falso;
+    boolean stand_by = FALSO;
+    boolean maquina_ligada = FALSO;
+    boolean dosador_ligado = FALSO;
+    boolean datador_ligado = FALSO;
 
 
 void setup() {
@@ -54,9 +54,9 @@ void setup() {
   pinMode(led_datador, ModoLeds);
 
   // Define estado inicial das saídas
-  digitalWrite(led_geral, SaidaDesligada);
-  digitalWrite(led_dosador, SaidaDesligada);
-  digitalWrite(led_datador, SaidaDesligada);
+  digitalWrite(led_geral, DESLIGA);
+  digitalWrite(led_dosador, DESLIGA);
+  digitalWrite(led_datador, DESLIGA);
 }
 
 
@@ -87,7 +87,7 @@ void standBy(){
     }
   } else {
     delay(3000);
-    stand_by = Verdadeiro;
+    stand_by = VERDADEIRO;
   }
 }
 
@@ -104,7 +104,7 @@ void btUmClique(byte botao, int *estado, int *est_ant, long *atr_ant, boolean *f
   if ((millis() - *atr_ant) > atraso) {
     if (leitura != *estado) {
       *estado = leitura;
-      if (*estado == SinalAlto) {
+      if (*estado == ALTO) {
         *funcao = !*funcao;
       }
     }
@@ -117,11 +117,11 @@ byte leEntrada(byte pino){
 }
 
 void liga(byte saida){
-  digitalWrite(saida, SaidaLigada);
+  digitalWrite(saida, LIGA);
 }
 
 void desliga(byte saida){
-  digitalWrite(saida, SaidaDesligada);
+  digitalWrite(saida, DESLIGA);
 }
 
 
