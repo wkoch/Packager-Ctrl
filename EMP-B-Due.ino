@@ -26,6 +26,10 @@
     #define DESLIGA LOW
     #define VERDADEIRO true
     #define FALSO false
+  // Nomes de Funções
+    #define NomeGeral "Geral"
+    #define NomeDosador "Dosador"
+    #define NomeDatador "Datador"
   // Botões de Entrada Um Clique
     unsigned long atraso = 50;
     int estbt_geral; // Estado do Botão Geral
@@ -156,18 +160,18 @@ void escreveSerial(String texto){
 
 void modoTeste(){
   if (maquina_ligada){
-    liga(led_geral, "Led Geral");
+    liga(led_geral, NomeGeral);
   } else {
-    desliga(led_geral, "Led Geral");
+    desliga(led_geral, NomeGeral);
   }
   if (dosador_ligado){
-    liga(led_dosador, "Led Dosador");
+    liga(led_dosador, NomeDosador);
   } else {
-    desliga(led_dosador, "Led Dosador");
+    desliga(led_dosador, NomeDosador);
   }
   if (datador_ligado){
-    liga(led_datador, "Led Datador");
+    liga(led_datador, NomeDatador);
   } else {
-    desliga(led_datador, "Led Datador");
+    desliga(led_datador, NomeDatador);
   }
 }
