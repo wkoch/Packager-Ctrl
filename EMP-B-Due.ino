@@ -17,9 +17,9 @@
     const byte pot_solda_horizontal = A1; // Potenciômetro da Solda Vertical
     const byte pot_solda_datador = A2; // Potenciômetro da Solda Vertical
   // Saídas
-    const byte led_geral = 23; // Saída Geral
-    const byte led_dosador = 25; // Saída do Dosador
-    const byte led_datador = 27; // Saída do Datador
+    const byte geral = 23; // Saída Geral
+    const byte dosador = 25; // Saída do Dosador
+    const byte datador = 27; // Saída do Datador
     const byte solda_vertical = 33; // Saída da Solda Vertical
     const byte solda_horizontal = 35; // Saída da Solda Horizontal
     const byte solda_datador = 37; // Saída da Solda do Datador
@@ -86,14 +86,17 @@ void setup() {
   pinMode(sensor_maquina, ModoBotoes);
 
 
-  pinMode(led_geral, ModoLeds);
-  pinMode(led_dosador, ModoLeds);
-  pinMode(led_datador, ModoLeds);
+  pinMode(geral, ModoLeds);
+  pinMode(dosador, ModoLeds);
+  pinMode(datador, ModoLeds);
 
   // Define estado inicial das saídas
-  digitalWrite(led_geral, DESLIGA);
-  digitalWrite(led_dosador, DESLIGA);
-  digitalWrite(led_datador, DESLIGA);
+  digitalWrite(geral, DESLIGA);
+  digitalWrite(dosador, DESLIGA);
+  digitalWrite(datador, DESLIGA);
+  digitalWrite(solda_vertical, DESLIGA);
+  digitalWrite(solda_horizontal, DESLIGA);
+  digitalWrite(solda_datador, DESLIGA);
 }
 
 
@@ -110,10 +113,8 @@ void geraPWM(byte pot, unsigned long *inicio, byte saida, String nome){
   unsigned long inativo = ciclo_PWM - ativo;
   if (millis() > *inicio && millis() <= (*inicio + ativo)){
     liga(saida, nome);
-    // digitalWrite(led, HIGH);
   } else if (millis() > (*inicio + ativo) && millis() < (*inicio + ciclo_PWM)){
     desliga(saida, nome);
-    // digitalWrite(led, LOW);
   } else if (millis() >= (*inicio + ciclo_PWM)) {
     *inicio = millis();
   }
@@ -251,26 +252,26 @@ void reiniciaSaidas(){
   dosador_ligado = FALSO;
   datador_ligado = FALSO;
 
-  desliga(led_geral, NomeGeral);
-  desliga(led_dosador, NomeDosador);
-  desliga(led_datador, NomeDatador);
+  desliga(geral, NomeGeral);
+  desliga(dosador, NomeDosador);
+  desliga(datador, NomeDatador);
 }
 
 
 void modoTeste(){
   if (maquina_ligada){
-    liga(led_geral, NomeGeral);
+    liga(geral, NomeGeral);
   } else {
-    desliga(led_geral, NomeGeral);
+    desliga(geral, NomeGeral);
   }
   if (dosador_ligado){
-    liga(led_dosador, NomeDosador);
+    liga(dosador, NomeDosador);
   } else {
-    desliga(led_dosador, NomeDosador);
+    desliga(dosador, NomeDosador);
   }
   if (datador_ligado){
-    liga(led_datador, NomeDatador);
+    liga(datador, NomeDatador);
   } else {
-    desliga(led_datador, NomeDatador);
+    desliga(datador, NomeDatador);
   }
 }
