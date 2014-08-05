@@ -8,12 +8,12 @@
 // Constantes
   // Entradas
     const byte bt_geral = 22; // Entrada do botão de Liga/Desliga Geral
-    const byte bt_dosador = 26; // Entrada do botão de Liga/Desliga do Dosador
-    const byte bt_datador = 30; // Entrada do botão de Liga/Desliga do Datador
+    const byte bt_dosador = 24; // Entrada do botão de Liga/Desliga do Dosador
+    const byte bt_datador = 26; // Entrada do botão de Liga/Desliga do Datador
   // Saídas
-    const byte led_geral = 25; // Saída Geral
-    const byte led_dosador = 29; // Saída do Dosador
-    const byte led_datador = 33; // Saída do Datador
+    const byte led_geral = 23; // Saída Geral
+    const byte led_dosador = 25; // Saída do Dosador
+    const byte led_datador = 27; // Saída do Datador
 
 
 // Variáveis
@@ -27,16 +27,16 @@
     #define VERDADEIRO true
     #define FALSO false
   // Botões de Entrada Um Clique
-    long atraso = 50;
+    unsigned long atraso = 50;
     int estbt_geral; // Estado do Botão Geral
     int estbta_geral = BAIXO; // Estado anterior do Botão Geral
-    long atr_geral = 0; // Atraso do Botão Geral
+    unsigned long atr_geral = 0; // Atraso do Botão Geral
     int estbt_dosador; // Estado do Botão Dosador
     int estbta_dosador = BAIXO; // Estado anterior do Botão Dosador
-    long atr_dosador = 0; // Atraso do Botão Dosador
+    unsigned long atr_dosador = 0; // Atraso do Botão Dosador
     int estbt_datador; // Estado do Botão Datador
     int estbta_datador = BAIXO; // Estado anterior do Botão Dosador
-    long atr_datador = 0; // Atraso do Botão Dosador
+    unsigned long atr_datador = 0; // Atraso do Botão Dosador
   // Programa
     boolean stand_by = FALSO;
     boolean maquina_ligada = FALSO;
@@ -96,7 +96,7 @@ void iniciaTrabalho(){
 
 }
 
-void btUmClique(byte botao, int *estado, int *est_ant, long *atr_ant, boolean *funcao){
+void btUmClique(byte botao, int *estado, int *est_ant, unsigned long *atr_ant, boolean *funcao){
   byte leitura = leEntrada(botao);
   if (leitura != *est_ant) {
     *atr_ant = millis();
@@ -120,14 +120,14 @@ byte leEntrada(byte pino){
 void liga(byte saida, String texto){
   if (desligado(saida)){
     digitalWrite(saida, LIGA);
-    escreveSerial("Ligado " + texto + ".");
+    escreveSerial(texto + " Ligado.");
   }
 }
 
 void desliga(byte saida, String texto){
   if (ligado(saida)){
     digitalWrite(saida, DESLIGA);
-    escreveSerial("Desligado " + texto + ".");
+    escreveSerial(texto + " Desligado.");
   }
 }
 
