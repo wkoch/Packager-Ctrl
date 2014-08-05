@@ -10,6 +10,9 @@
     const byte bt_geral = 22; // Entrada do botão de Liga/Desliga Geral
     const byte bt_dosador = 24; // Entrada do botão de Liga/Desliga do Dosador
     const byte bt_datador = 26; // Entrada do botão de Liga/Desliga do Datador
+    const byte sensor_porta = 48;
+    const byte sensor_painel = 50;
+    const byte sensor_maquina = 52;
   // Saídas
     const byte led_geral = 23; // Saída Geral
     const byte led_dosador = 25; // Saída do Dosador
@@ -46,13 +49,20 @@
     boolean maquina_ligada = FALSO;
     boolean dosador_ligado = FALSO;
     boolean datador_ligado = FALSO;
+    boolean alarme_ativo = FALSO;
 
 
 void setup() {
   Serial.begin(9600);
+  // Botões
   pinMode(bt_geral, ModoBotoes);
   pinMode(bt_dosador, ModoBotoes);
   pinMode(bt_datador, ModoBotoes);
+  // Sensores
+  pinMode(sensor_porta, ModoBotoes);
+  pinMode(sensor_painel, ModoBotoes);
+  pinMode(sensor_maquina, ModoBotoes);
+
 
   pinMode(led_geral, ModoLeds);
   pinMode(led_dosador, ModoLeds);
@@ -66,8 +76,11 @@ void setup() {
 
 
 void loop() {
-  standBy();
-  modoTeste();
+  modoAlarme();
+  if (!alarme_ativo){
+    standBy();
+    modoTeste();
+  }
 }
 
 void acionaGeral(){
@@ -79,25 +92,48 @@ void acionaDosador(){
 }
 
 void acionaDatador(){
-  btUmClique(bt_datador, &estbt_datador, &estbta_datador, &atr_datador, &datador_ligado);
+  if (maquina_ligada){
+    btUmClique(bt_datador, &estbt_datador, &estbta_datador, &atr_datador, &datador_ligado);
+  }
 }
 
 void standBy(){
   if (stand_by){
-    acionaGeral();
-    acionaDosador();
-    acionaDatador();
+    acionaGeral(); // Checa botão Geral
+    acionaDosador(); // Checa botão Dosador
+    acionaDatador(); // Checa botão Datador
     if (maquina_ligada){
       iniciaTrabalho();
+    } else {
+      reiniciaSaidas();
     }
   } else {
-    delay(3000);
-    stand_by = VERDADEIRO;
+    delay(3000); // Espera 3 segundos após energização
+    stand_by = VERDADEIRO; // Libera funcionamento
   }
 }
 
 void iniciaTrabalho(){
 
+}
+
+void modoAlarme(){
+  if (!alarme_ativo){
+    if (ativo(sensor_porta)){
+      bloqueioPorAlarme("Sensor da Porta");
+    } else if (ativo(sensor_painel)){
+      bloqueioPorAlarme("Sensor do Painel");
+    } else if (ativo(sensor_maquina)){
+      bloqueioPorAlarme("Sensor da Máquina");
+    }
+  }
+}
+
+void bloqueioPorAlarme(String texto){
+  alarme_ativo = VERDADEIRO;
+  escreveSerial("\n<< Alarme! >>\n");
+  reiniciaSaidas();
+  escreveSerial(texto + " detectou uma falha de segurança.");
 }
 
 void btUmClique(byte botao, int *estado, int *est_ant, unsigned long *atr_ant, boolean *funcao){
@@ -151,10 +187,35 @@ boolean desligado(byte saida){
   }
 }
 
+boolean ativo(byte entrada){
+  if (digitalRead(entrada) == ALTO){
+    return VERDADEIRO;
+  } else {
+    return FALSO;
+  }
+}
+
+boolean inativo(byte entrada){
+  if (digitalRead(entrada) == BAIXO){
+    return VERDADEIRO;
+  } else {
+    return FALSO;
+  }
+}
+
 void escreveSerial(String texto){
   if (Serial){
     Serial.println(texto);
   }
+}
+
+void reiniciaSaidas(){
+  dosador_ligado = FALSO;
+  datador_ligado = FALSO;
+
+  desliga(led_geral, NomeGeral);
+  desliga(led_dosador, NomeDosador);
+  desliga(led_datador, NomeDatador);
 }
 
 
