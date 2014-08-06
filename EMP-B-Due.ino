@@ -122,8 +122,10 @@ void standBy(){
       reiniciaSaidas();
     }
   } else if (!alarme_ativo) {
+    escreveSerial("Preparando para iniciar trabalho.");
     delay(3000); // Espera 3 segundos após energização
     stand_by = VERDADEIRO; // Libera funcionamento
+    escreveSerial("Tudo pronto!");
   }
 }
 
@@ -164,14 +166,14 @@ void geraPWM(byte pot, unsigned long *inicio, byte saida, String nome){
   unsigned long inativo = ciclo_PWM - ativo;
   if (maquina_ligada and !alarme_ativo){
     if (millis() > *inicio && millis() <= (*inicio + ativo)){
-      liga(saida, nome);
+      liga(saida);
     } else if (millis() > (*inicio + ativo) && millis() < (*inicio + ciclo_PWM)){
-      desliga(saida, nome);
+      desliga(saida);
     } else if (millis() >= (*inicio + ciclo_PWM)) {
       *inicio = millis();
     }
   } else {
-    desliga(saida, nome);
+    desliga(saida);
   }
 }
 
@@ -180,7 +182,7 @@ void bloqueioPorAlarme(String texto){
   stand_by = FALSO;
   escreveSerial("\n<< Alarme! >>\n");
   reiniciaSaidas();
-  escreveSerial(texto + " detectou uma falha de segurança.");
+  escreveSerial(texto + " detectou uma falha!");
 }
 
 void btUmClique(byte botao, int *estado, int *est_ant, unsigned long *atr_ant, boolean *funcao){
@@ -206,16 +208,24 @@ byte leEntrada(byte pino){
   return digitalRead(pino);
 }
 
-void liga(byte saida, String texto){
+void liga(byte saida){
+  digitalWrite(saida, LIGA);
+}
+
+void ligaFuncao(byte saida, String texto){
   if (desligado(saida)){
-    digitalWrite(saida, LIGA);
+    liga(saida);
     escreveSerial(texto + " Ligado.");
   }
 }
 
-void desliga(byte saida, String texto){
+void desliga(byte saida){
+  digitalWrite(saida, DESLIGA);
+}
+
+void desligaFuncao(byte saida, String texto){
   if (ligado(saida)){
-    digitalWrite(saida, DESLIGA);
+    desliga(saida);
     escreveSerial(texto + " Desligado.");
   }
 }
@@ -262,36 +272,36 @@ void reiniciaSaidas(){
   dosador_ligado = FALSO;
   datador_ligado = FALSO;
 
-  desliga(geral, NomeGeral);
-  desliga(dosador, NomeDosador);
-  desliga(datador, NomeDatador);
+  desligaFuncao(geral, NomeGeral);
+  desligaFuncao(dosador, NomeDosador);
+  desligaFuncao(datador, NomeDatador);
 }
 
 void resetCompleto(){
-  digitalWrite(geral, DESLIGA);
-  digitalWrite(dosador, DESLIGA);
-  digitalWrite(datador, DESLIGA);
+  desliga(geral);
+  desliga(dosador);
+  desliga(datador);
 
-  digitalWrite(solda_vertical, DESLIGA);
-  digitalWrite(solda_horizontal, DESLIGA);
-  digitalWrite(solda_datador, DESLIGA);
+  desliga(solda_vertical);
+  desliga(solda_horizontal);
+  desliga(solda_datador);
 }
 
 
 void modoTeste(){
   if (maquina_ligada){
-    liga(geral, NomeGeral);
+    ligaFuncao(geral, NomeGeral);
   } else {
-    desliga(geral, NomeGeral);
+    desligaFuncao(geral, NomeGeral);
   }
   if (dosador_ligado){
-    liga(dosador, NomeDosador);
+    ligaFuncao(dosador, NomeDosador);
   } else {
-    desliga(dosador, NomeDosador);
+    desligaFuncao(dosador, NomeDosador);
   }
   if (datador_ligado){
-    liga(datador, NomeDatador);
+    ligaFuncao(datador, NomeDatador);
   } else {
-    desliga(datador, NomeDatador);
+    desligaFuncao(datador, NomeDatador);
   }
 }
