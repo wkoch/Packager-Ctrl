@@ -27,8 +27,9 @@
 
 // Variáveis
   // Configurações
-    #define ModoBotoes INPUT_PULLUP // INPUT ou INPUT_PULLUP
-    #define ModoLeds OUTPUT
+    #define BOTAO INPUT_PULLUP // INPUT ou INPUT_PULLUP
+    #define SENSOR INPUT // INPUT ou INPUT_PULLUP
+    #define SAIDA OUTPUT
     #define ALTO LOW // Deve ser invertido para INPUT_PULLUP
     #define BAIXO HIGH // Deve ser invertido para INPUT_PULLUP
     #define LIGA HIGH
@@ -69,35 +70,29 @@
 void setup() {
   Serial.begin(9600);
   // Botões
-  pinMode(bt_geral, ModoBotoes);
-  pinMode(bt_dosador, ModoBotoes);
-  pinMode(bt_datador, ModoBotoes);
-  // Potenciômetros
-  pinMode(pot_solda_vertical, INPUT);
-  pinMode(pot_solda_horizontal, INPUT);
-  pinMode(pot_solda_horizontal, INPUT);
-  // PWM
-  pinMode(solda_vertical, OUTPUT);
-  pinMode(solda_horizontal, OUTPUT);
-  pinMode(solda_datador, OUTPUT);
+  pinMode(bt_geral, BOTAO);
+  pinMode(bt_dosador, BOTAO);
+  pinMode(bt_datador, BOTAO);
+  // Potenciômetros das Soldas
+  pinMode(pot_solda_vertical, SENSOR);
+  pinMode(pot_solda_horizontal, SENSOR);
+  pinMode(pot_solda_horizontal, SENSOR);
+  // Saídas PWM das Soldas
+  pinMode(solda_vertical, SAIDA);
+  pinMode(solda_horizontal, SAIDA);
+  pinMode(solda_datador, SAIDA);
   // Sensores
-  pinMode(sensor_porta, ModoBotoes);
-  pinMode(sensor_painel, ModoBotoes);
-  pinMode(sensor_maquina, ModoBotoes);
+  pinMode(sensor_porta, BOTAO);
+  pinMode(sensor_painel, BOTAO);
+  pinMode(sensor_maquina, BOTAO);
 
 
-  pinMode(geral, ModoLeds);
-  pinMode(dosador, ModoLeds);
-  pinMode(datador, ModoLeds);
+  pinMode(geral, SAIDA);
+  pinMode(dosador, SAIDA);
+  pinMode(datador, SAIDA);
 
   // Define estado inicial das saídas
-  digitalWrite(geral, DESLIGA);
-  digitalWrite(dosador, DESLIGA);
-  digitalWrite(datador, DESLIGA);
-  digitalWrite(solda_vertical, DESLIGA);
-  digitalWrite(solda_horizontal, DESLIGA);
-  digitalWrite(solda_datador, DESLIGA);
-  digitalWrite(53, DESLIGA); // Temporário, ver e apagar
+  resetCompleto();
 }
 
 
@@ -114,35 +109,7 @@ void loop() {
   }
 }
 
-void geraPWM(byte pot, unsigned long *inicio, byte saida, String nome){
-  unsigned long ativo = map(analogRead(pot), 0, 1023, 0, ciclo_PWM);
-  unsigned long inativo = ciclo_PWM - ativo;
-  if (maquina_ligada and !alarme_ativo){
-    if (millis() > *inicio && millis() <= (*inicio + ativo)){
-      liga(saida, nome);
-    } else if (millis() > (*inicio + ativo) && millis() < (*inicio + ciclo_PWM)){
-      desliga(saida, nome);
-    } else if (millis() >= (*inicio + ciclo_PWM)) {
-      *inicio = millis();
-    }
-  } else {
-    desliga(saida, nome);
-  }
-}
-
-void acionaGeral(){
-  btUmClique(bt_geral, &estbt_geral, &estbta_geral, &atr_geral, &maquina_ligada);
-}
-
-void acionaDosador(){
-  btUmClique(bt_dosador, &estbt_dosador, &estbta_dosador, &atr_dosador, &dosador_ligado);
-}
-
-void acionaDatador(){
-  if (maquina_ligada){
-    btUmClique(bt_datador, &estbt_datador, &estbta_datador, &atr_datador, &datador_ligado);
-  }
-}
+// MODOS DE TRABALHO
 
 void standBy(){
   if (stand_by){
@@ -176,6 +143,38 @@ void modoAlarme(){
   }
 }
 
+// FUNÇÕES ADICIONAIS
+
+void acionaGeral(){
+  btUmClique(bt_geral, &estbt_geral, &estbta_geral, &atr_geral, &maquina_ligada);
+}
+
+void acionaDosador(){
+  btUmClique(bt_dosador, &estbt_dosador, &estbta_dosador, &atr_dosador, &dosador_ligado);
+}
+
+void acionaDatador(){
+  if (maquina_ligada and !alarme_ativo){
+    btUmClique(bt_datador, &estbt_datador, &estbta_datador, &atr_datador, &datador_ligado);
+  }
+}
+
+void geraPWM(byte pot, unsigned long *inicio, byte saida, String nome){
+  unsigned long ativo = map(analogRead(pot), 0, 1023, 0, ciclo_PWM);
+  unsigned long inativo = ciclo_PWM - ativo;
+  if (maquina_ligada and !alarme_ativo){
+    if (millis() > *inicio && millis() <= (*inicio + ativo)){
+      liga(saida, nome);
+    } else if (millis() > (*inicio + ativo) && millis() < (*inicio + ciclo_PWM)){
+      desliga(saida, nome);
+    } else if (millis() >= (*inicio + ciclo_PWM)) {
+      *inicio = millis();
+    }
+  } else {
+    desliga(saida, nome);
+  }
+}
+
 void bloqueioPorAlarme(String texto){
   alarme_ativo = VERDADEIRO;
   escreveSerial("\n<< Alarme! >>\n");
@@ -199,6 +198,8 @@ void btUmClique(byte botao, int *estado, int *est_ant, unsigned long *atr_ant, b
   }
   *est_ant = leitura;
 }
+
+// FERRAMENTAS AUXILIARES
 
 byte leEntrada(byte pino){
   return digitalRead(pino);
@@ -263,6 +264,16 @@ void reiniciaSaidas(){
   desliga(geral, NomeGeral);
   desliga(dosador, NomeDosador);
   desliga(datador, NomeDatador);
+}
+
+void resetCompleto(){
+  digitalWrite(geral, DESLIGA);
+  digitalWrite(dosador, DESLIGA);
+  digitalWrite(datador, DESLIGA);
+
+  digitalWrite(solda_vertical, DESLIGA);
+  digitalWrite(solda_horizontal, DESLIGA);
+  digitalWrite(solda_datador, DESLIGA);
 }
 
 
