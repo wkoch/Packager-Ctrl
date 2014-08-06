@@ -75,6 +75,8 @@
     bool ciclo_resetado = FALSO;
     unsigned long conta_ciclo = 0;
   // Tempos do Ciclo
+    // Ciclo
+    unsigned long ciclo_padrao = 1500;
     // Mandibula
     unsigned long inicio_mandibula = 550;
     unsigned long fim_mandibula = 1500;
@@ -94,7 +96,7 @@
     unsigned long inicio_soldas = 0;
     unsigned long fim_soldas = 400;
     // Atraso entre resets consecutivos
-    unsigned long atraso_resets = 500;
+    unsigned long atraso_resets = ciclo_padrao / 3;
 
 
 void setup() {
