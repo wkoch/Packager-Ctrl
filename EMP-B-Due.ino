@@ -17,9 +17,9 @@
     const byte pot_solda_horizontal = A1; // Potenciômetro da Solda Vertical
     const byte pot_solda_datador = A2; // Potenciômetro da Solda Vertical
   // Saídas
-    const byte geral = 23; // Saída Geral
-    const byte dosador = 25; // Saída do Dosador
-    const byte datador = 27; // Saída do Datador
+    const byte geral = 40; // Saída Geral
+    const byte dosador = 42; // Saída do Dosador
+    const byte datador = 44; // Saída do Datador
     const byte solda_vertical = 33; // Saída da Solda Vertical
     const byte solda_horizontal = 35; // Saída da Solda Horizontal
     const byte solda_datador = 37; // Saída da Solda do Datador
@@ -97,11 +97,17 @@ void setup() {
   digitalWrite(solda_vertical, DESLIGA);
   digitalWrite(solda_horizontal, DESLIGA);
   digitalWrite(solda_datador, DESLIGA);
+  digitalWrite(53, DESLIGA); // Temporário, ver e apagar
 }
 
 
 void loop() {
   modoAlarme();
+
+  geraPWM(pot_solda_vertical, &tempo_PWM_vertical, solda_vertical, NomeSoldaVertical);
+  geraPWM(pot_solda_horizontal, &tempo_PWM_horizontal, solda_horizontal, NomeSoldaHorizontal);
+  geraPWM(pot_solda_datador, &tempo_PWM_datador, solda_datador, NomeSoldaDatador);
+
   if (!alarme_ativo){
     standBy();
     modoTeste();
@@ -111,12 +117,16 @@ void loop() {
 void geraPWM(byte pot, unsigned long *inicio, byte saida, String nome){
   unsigned long ativo = map(analogRead(pot), 0, 1023, 0, ciclo_PWM);
   unsigned long inativo = ciclo_PWM - ativo;
-  if (millis() > *inicio && millis() <= (*inicio + ativo)){
-    liga(saida, nome);
-  } else if (millis() > (*inicio + ativo) && millis() < (*inicio + ciclo_PWM)){
+  if (maquina_ligada and !alarme_ativo){
+    if (millis() > *inicio && millis() <= (*inicio + ativo)){
+      liga(saida, nome);
+    } else if (millis() > (*inicio + ativo) && millis() < (*inicio + ciclo_PWM)){
+      desliga(saida, nome);
+    } else if (millis() >= (*inicio + ciclo_PWM)) {
+      *inicio = millis();
+    }
+  } else {
     desliga(saida, nome);
-  } else if (millis() >= (*inicio + ciclo_PWM)) {
-    *inicio = millis();
   }
 }
 
@@ -151,9 +161,7 @@ void standBy(){
 }
 
 void iniciaTrabalho(){
-  geraPWM(pot_solda_vertical, &tempo_PWM_vertical, solda_vertical, NomeSoldaVertical);
-  geraPWM(pot_solda_horizontal, &tempo_PWM_horizontal, solda_horizontal, NomeSoldaHorizontal);
-  geraPWM(pot_solda_datador, &tempo_PWM_datador, solda_datador, NomeSoldaDatador);
+
 }
 
 void modoAlarme(){
