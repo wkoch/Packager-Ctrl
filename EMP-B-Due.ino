@@ -112,7 +112,7 @@ void loop() {
 // MODOS DE TRABALHO
 
 void standBy(){
-  if (stand_by){
+  if (stand_by and !alarme_ativo){
     acionaGeral(); // Checa botão Geral
     acionaDosador(); // Checa botão Dosador
     acionaDatador(); // Checa botão Datador
@@ -121,7 +121,7 @@ void standBy(){
     } else {
       reiniciaSaidas();
     }
-  } else {
+  } else if (!alarme_ativo) {
     delay(3000); // Espera 3 segundos após energização
     stand_by = VERDADEIRO; // Libera funcionamento
   }
@@ -177,6 +177,7 @@ void geraPWM(byte pot, unsigned long *inicio, byte saida, String nome){
 
 void bloqueioPorAlarme(String texto){
   alarme_ativo = VERDADEIRO;
+  stand_by = FALSO;
   escreveSerial("\n<< Alarme! >>\n");
   reiniciaSaidas();
   escreveSerial(texto + " detectou uma falha de segurança.");
