@@ -10,9 +10,9 @@
     const byte bt_geral = 22; // Entrada do botão de Liga/Desliga Geral
     const byte bt_dosador = 24; // Entrada do botão de Liga/Desliga do Dosador
     const byte bt_datador = 26; // Entrada do botão de Liga/Desliga do Datador
-    const byte sensor_porta = 48; // Sensor de Segurança da Porta Frontal
-    const byte sensor_painel = 50; // Sensor de Segurança da Porta do Painel
-    const byte sensor_maquina = 52; // Sensor de Segurança da Porta da Máquina
+    const byte sensor_porta = 32; // Sensor de Segurança da Porta Frontal
+    const byte sensor_painel = 34; // Sensor de Segurança da Porta do Painel
+    const byte sensor_maquina = 36; // Sensor de Segurança da Porta da Máquina
     const byte pot_solda_vertical = A0; // Potenciômetro da Solda Vertical
     const byte pot_solda_horizontal = A1; // Potenciômetro da Solda Vertical
     const byte pot_solda_datador = A2; // Potenciômetro da Solda Vertical
