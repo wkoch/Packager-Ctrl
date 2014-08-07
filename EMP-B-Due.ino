@@ -148,7 +148,7 @@ void loop() {
 // MODOS DE TRABALHO
 
 void standBy(){
-  if (stand_by and !alarme_ativo){
+  if (stand_by && !alarme_ativo){
     acionaGeral(); // Monitora botão Geral
     acionaDosador(); // Monitora botão Dosador
     acionaDatador(); // Monitora botão Datador
@@ -204,19 +204,19 @@ void acionaDosador(){
 }
 
 void acionaDatador(){
-  if (maquina_ligada and !alarme_ativo){
+  if (maquina_ligada && !alarme_ativo){
     btUmClique(bt_datador, &estbt_datador, &estbta_datador, &atr_datador, &datador_ligado);
   }
 }
 
 void funcaoReset() {
   unsigned long tempo_atual = millis();
-  if (!ciclo_resetado and (ativo(sensor_reset) or tempo_atual >= inicio_ciclo + ciclo_padrao)) {
+  if (!ciclo_resetado && (ativo(sensor_reset) || (tempo_atual >= inicio_ciclo + ciclo_padrao))) {
     ciclo_resetado = true;
     conta_ciclo++;
     escreveSerial((String) conta_ciclo + ": " + (String) (tempo_atual - inicio_ciclo));
     reiniciaCiclo();
-  } else if (ciclo_resetado and tempo_atual > atraso_resets) {
+  } else if (ciclo_resetado && ((tempo_atual - inicio_ciclo) > atraso_resets)) {
     ciclo_resetado = false;
   }
 }
@@ -230,7 +230,7 @@ void reiniciaCiclo(){
 void geraPWM(byte pot, unsigned long *inicio, byte saida, String nome){
   unsigned long ativo = map(analogRead(pot), 0, 1023, 0, ciclo_PWM);
   unsigned long inativo = ciclo_PWM - ativo;
-  if (maquina_ligada and !alarme_ativo){
+  if (maquina_ligada && !alarme_ativo){
     if (millis() > *inicio && millis() <= (*inicio + ativo)){
       liga(saida);
     } else if (millis() > (*inicio + ativo) && millis() < (*inicio + ciclo_PWM)){
