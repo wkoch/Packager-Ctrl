@@ -74,12 +74,14 @@
     bool fotocelula_cortou = FALSO;
     bool ciclo_resetado = FALSO;
     bool reset_falso = FALSO;
-    unsigned long conta_ciclo = 0;
+    unsigned long conta_ciclos = 0;
+    boolean produzindo = FALSO;
   // Tempos do Ciclo
     // Ciclo
     unsigned long ciclo_padrao = 1500;
     unsigned long ciclo_minimo = 900;
     unsigned long ciclo_maximo = 2200;
+    unsigned long primeiro_ciclo = 0;
     // Mandibula
     unsigned long inicio_mandibula = 550;
     unsigned long fim_mandibula = 1500;
@@ -169,10 +171,11 @@ void standBy() {
 }
 
 void iniciaTrabalho() {
-  if (conta_ciclo == 0) {
+  if (!produzindo) {
     reiniciaCiclo();
-    conta_ciclo++;
-  } else if (conta_ciclo >= 3) {
+    primeiro_ciclo = millis();
+    produzindo = VERDADEIRO;
+  } else if (conta_ciclos >= 3) {
     ligaFuncao(led_teste_1, "Led Teste 1"); // Exemplo para teste.
     // ciclo de trabalho
   }
@@ -220,16 +223,19 @@ void funcaoReset() {
   if (!ciclo_resetado) {
     unsigned long fim_ciclo = inicio_ciclo + ciclo_padrao;
     unsigned long novo_ciclo = tempo_atual - inicio_ciclo;
-    if ((ativo(sensor_reset) || (tempo_atual >= fim_ciclo))) {
-      if (novo_ciclo > ciclo_minimo && novo_ciclo < ciclo_maximo) {
+    unsigned long minimo = inicio_ciclo + ciclo_minimo;
+    unsigned long maximo = inicio_ciclo + ciclo_maximo;
+    if ((ativo(sensor_reset) || (tempo_atual >= maximo))) {
+      if ((novo_ciclo > minimo && novo_ciclo < maximo) || (tempo_atual >= maximo)) {
+        ciclo_padrao = (tempo_atual - primeiro_ciclo) / (long) conta_ciclos;
         ciclo_resetado = VERDADEIRO;
-        conta_ciclo++;
-        escreveSerial((String) conta_ciclo + ": " + (String) (tempo_atual - inicio_ciclo));
+        conta_ciclos++;
+        escreveSerial((String) conta_ciclos + ": " + (String) (tempo_atual - inicio_ciclo));
         reiniciaCiclo();
-      } else if (novo_ciclo >= ciclo_maximo) {
+      } else if (novo_ciclo >= maximo) {
         escreveSerial("Erro, reset maior que o maximo: " + (String) novo_ciclo);
         reset_falso = VERDADEIRO;
-      } else if (novo_ciclo <= ciclo_minimo) {
+      } else if (novo_ciclo <= minimo) {
         escreveSerial("Erro, reset menor que o minimo: " + (String) novo_ciclo);
         reset_falso = VERDADEIRO;
       }
@@ -237,9 +243,9 @@ void funcaoReset() {
   } else if ((tempo_atual - inicio_ciclo) > atraso_resets) {
     if (ciclo_resetado) {
       ciclo_resetado = FALSO;
-      } else if (reset_falso) {
-        reset_falso = FALSO;
-      }
+    } else if (reset_falso) {
+      reset_falso = FALSO;
+    }
   }
 }
 
@@ -352,7 +358,7 @@ void escreveSerial(String texto) {
 void reiniciaSaidas() {
   dosador_ligado = FALSO;
   datador_ligado = FALSO;
-  conta_ciclo = 0;
+  conta_ciclos = 0;
 
   desligaFuncao(geral, NomeGeral);
   desligaFuncao(dosador, NomeDosador);
