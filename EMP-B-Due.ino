@@ -78,9 +78,9 @@
     boolean produzindo = FALSO;
   // Tempos do Ciclo
     // Ciclo
-    unsigned long ciclo_padrao = 1500;
+    unsigned long ciclo_padrao = 2000;
     unsigned long ciclo_minimo = 900;
-    unsigned long ciclo_maximo = 2200;
+    unsigned long ciclo_maximo = 2000;
     unsigned long primeiro_ciclo = 0;
     // Mandibula
     unsigned long inicio_mandibula = 550;
@@ -225,18 +225,18 @@ void funcaoReset() {
     unsigned long novo_ciclo = tempo_atual - inicio_ciclo;
     unsigned long minimo = inicio_ciclo + ciclo_minimo;
     unsigned long maximo = inicio_ciclo + ciclo_maximo;
-    if ((ativo(sensor_reset) || (tempo_atual >= maximo))) {
-      if ((novo_ciclo > minimo && novo_ciclo < maximo) || (tempo_atual >= maximo)) {
-        ciclo_padrao = (tempo_atual - primeiro_ciclo) / (long) conta_ciclos;
-        ciclo_resetado = VERDADEIRO;
+    if ((tempo_atual >= maximo) || (ativo(sensor_reset))) {
+      if (minimo < novo_ciclo < maximo) { //  || (tempo_atual >= maximo)
         conta_ciclos++;
-        escreveSerial((String) conta_ciclos + ": " + (String) (tempo_atual - inicio_ciclo));
+        ciclo_resetado = VERDADEIRO;
+        escreveSerial((String) conta_ciclos + ": " + (String) (tempo_atual - inicio_ciclo) + " / R:" + (String) tempo_atual + "-" + (String) primeiro_ciclo + "/" + (String) conta_ciclos + "=" + (String) ciclo_padrao);
         reiniciaCiclo();
+        ciclo_padrao = ((tempo_atual - primeiro_ciclo) / (unsigned long) conta_ciclos);
       } else if (novo_ciclo >= maximo) {
-        escreveSerial("Erro, reset maior que o maximo: " + (String) novo_ciclo);
+        escreveSerial("Erro, reset maior que o maximo: " + (String) novo_ciclo + " / R:" + (String) maximo);
         reset_falso = VERDADEIRO;
       } else if (novo_ciclo <= minimo) {
-        escreveSerial("Erro, reset menor que o minimo: " + (String) novo_ciclo);
+        escreveSerial("Erro, reset menor que o minimo: " + (String) novo_ciclo + " / R:" + (String) minimo);
         reset_falso = VERDADEIRO;
       }
     }
