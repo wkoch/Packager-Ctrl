@@ -73,10 +73,13 @@
     bool fotocelula_liberada = FALSO;
     bool fotocelula_cortou = FALSO;
     bool ciclo_resetado = FALSO;
+    bool reset_falso = FALSO;
     unsigned long conta_ciclo = 0;
   // Tempos do Ciclo
     // Ciclo
     unsigned long ciclo_padrao = 1500;
+    unsigned long ciclo_minimo = 900;
+    unsigned long ciclo_maximo = 2200;
     // Mandibula
     unsigned long inicio_mandibula = 550;
     unsigned long fim_mandibula = 1500;
@@ -139,7 +142,7 @@ void loop() {
   geraPWM(pot_solda_horizontal, &tempo_PWM_horizontal, solda_horizontal, NomeSoldaHorizontal);
   geraPWM(pot_solda_datador, &tempo_PWM_datador, solda_datador, NomeSoldaDatador);
 
-  if (!alarme_ativo){
+  if (!alarme_ativo) {
     standBy();
     modoTeste();
   }
@@ -147,12 +150,12 @@ void loop() {
 
 // MODOS DE TRABALHO
 
-void standBy(){
-  if (stand_by && !alarme_ativo){
+void standBy() {
+  if (stand_by && !alarme_ativo) {
     acionaGeral(); // Monitora botão Geral
     acionaDosador(); // Monitora botão Dosador
     acionaDatador(); // Monitora botão Datador
-    if (maquina_ligada){
+    if (maquina_ligada) {
       iniciaTrabalho();
     } else {
       reiniciaSaidas();
@@ -165,21 +168,24 @@ void standBy(){
   }
 }
 
-void iniciaTrabalho(){
-  if (conta_ciclo >= 3){
+void iniciaTrabalho() {
+  if (conta_ciclo == 0) {
+    reiniciaCiclo();
+    conta_ciclo++;
+  } else if (conta_ciclo >= 3) {
     ligaFuncao(led_teste_1, "Led Teste 1"); // Exemplo para teste.
     // ciclo de trabalho
   }
   funcaoReset();
 }
 
-void modoAlarme(){
-  if (!alarme_ativo){
-    if (ativo(sensor_porta)){
+void modoAlarme() {
+  if (!alarme_ativo) {
+    if (ativo(sensor_porta)) {
       bloqueioPorAlarme("Sensor da Porta");
-    } else if (ativo(sensor_painel)){
+    } else if (ativo(sensor_painel)) {
       bloqueioPorAlarme("Sensor do Painel");
-    } else if (ativo(sensor_maquina)){
+    } else if (ativo(sensor_maquina)) {
       bloqueioPorAlarme("Sensor da Máquina");
     }
   }
@@ -187,7 +193,7 @@ void modoAlarme(){
 
 // FUNÇÕES ADICIONAIS
 
-void bloqueioPorAlarme(String texto){
+void bloqueioPorAlarme(String texto) {
   alarme_ativo = VERDADEIRO;
   stand_by = FALSO;
   escreveSerial("\n<< Alarme! >>\n");
@@ -195,45 +201,61 @@ void bloqueioPorAlarme(String texto){
   escreveSerial(texto + " detectou uma falha!");
 }
 
-void acionaGeral(){
+void acionaGeral() {
   btUmClique(bt_geral, &estbt_geral, &estbta_geral, &atr_geral, &maquina_ligada);
 }
 
-void acionaDosador(){
+void acionaDosador() {
   btUmClique(bt_dosador, &estbt_dosador, &estbta_dosador, &atr_dosador, &dosador_ligado);
 }
 
-void acionaDatador(){
-  if (maquina_ligada && !alarme_ativo){
+void acionaDatador() {
+  if (maquina_ligada && !alarme_ativo) {
     btUmClique(bt_datador, &estbt_datador, &estbta_datador, &atr_datador, &datador_ligado);
   }
 }
 
 void funcaoReset() {
   unsigned long tempo_atual = millis();
-  if (!ciclo_resetado && (ativo(sensor_reset) || (tempo_atual >= inicio_ciclo + ciclo_padrao))) {
-    ciclo_resetado = true;
-    conta_ciclo++;
-    escreveSerial((String) conta_ciclo + ": " + (String) (tempo_atual - inicio_ciclo));
-    reiniciaCiclo();
-  } else if (ciclo_resetado && ((tempo_atual - inicio_ciclo) > atraso_resets)) {
-    ciclo_resetado = false;
+  if (!ciclo_resetado) {
+    unsigned long fim_ciclo = inicio_ciclo + ciclo_padrao;
+    unsigned long novo_ciclo = tempo_atual - inicio_ciclo;
+    if ((ativo(sensor_reset) || (tempo_atual >= fim_ciclo))) {
+      if (novo_ciclo > ciclo_minimo && novo_ciclo < ciclo_maximo) {
+        ciclo_resetado = VERDADEIRO;
+        conta_ciclo++;
+        escreveSerial((String) conta_ciclo + ": " + (String) (tempo_atual - inicio_ciclo));
+        reiniciaCiclo();
+      } else if (novo_ciclo >= ciclo_maximo) {
+        escreveSerial("Erro, reset maior que o maximo: " + (String) novo_ciclo);
+        reset_falso = VERDADEIRO;
+      } else if (novo_ciclo <= ciclo_minimo) {
+        escreveSerial("Erro, reset menor que o minimo: " + (String) novo_ciclo);
+        reset_falso = VERDADEIRO;
+      }
+    }
+  } else if ((tempo_atual - inicio_ciclo) > atraso_resets) {
+    if (ciclo_resetado) {
+      ciclo_resetado = FALSO;
+      } else if (reset_falso) {
+        reset_falso = FALSO;
+      }
   }
 }
 
-void reiniciaCiclo(){
+void reiniciaCiclo() {
   inicio_ciclo = millis();
   fotocelula_liberada = FALSO;
   fotocelula_cortou = FALSO;
 }
 
-void geraPWM(byte pot, unsigned long *inicio, byte saida, String nome){
+void geraPWM(byte pot, unsigned long *inicio, byte saida, String nome) {
   unsigned long ativo = map(analogRead(pot), 0, 1023, 0, ciclo_PWM);
   unsigned long inativo = ciclo_PWM - ativo;
-  if (maquina_ligada && !alarme_ativo){
-    if (millis() > *inicio && millis() <= (*inicio + ativo)){
+  if (maquina_ligada && !alarme_ativo) {
+    if (millis() > *inicio && millis() <= (*inicio + ativo)) {
       liga(saida);
-    } else if (millis() > (*inicio + ativo) && millis() < (*inicio + ciclo_PWM)){
+    } else if (millis() > (*inicio + ativo) && millis() < (*inicio + ciclo_PWM)) {
       desliga(saida);
     } else if (millis() >= (*inicio + ciclo_PWM)) {
       *inicio = millis();
@@ -246,65 +268,65 @@ void geraPWM(byte pot, unsigned long *inicio, byte saida, String nome){
 
 // FERRAMENTAS AUXILIARES
 
-byte leEntrada(byte pino){
+byte leEntrada(byte pino) {
   return digitalRead(pino);
 }
 
-void liga(byte saida){
+void liga(byte saida) {
   digitalWrite(saida, LIGA);
 }
 
-void ligaFuncao(byte saida, String texto){
-  if (desligado(saida)){
+void ligaFuncao(byte saida, String texto) {
+  if (desligado(saida)) {
     liga(saida);
     escreveSerial(texto + " Ligado.");
   }
 }
 
-void desliga(byte saida){
+void desliga(byte saida) {
   digitalWrite(saida, DESLIGA);
 }
 
-void desligaFuncao(byte saida, String texto){
-  if (ligado(saida)){
+void desligaFuncao(byte saida, String texto) {
+  if (ligado(saida)) {
     desliga(saida);
     escreveSerial(texto + " Desligado.");
   }
 }
 
-boolean ligado(byte saida){
-  if (digitalRead(saida) == LIGA){
+boolean ligado(byte saida) {
+  if (digitalRead(saida) == LIGA) {
     return VERDADEIRO;
   } else {
     return FALSO;
   }
 }
 
-boolean desligado(byte saida){
-  if (digitalRead(saida) == DESLIGA){
+boolean desligado(byte saida) {
+  if (digitalRead(saida) == DESLIGA) {
     return VERDADEIRO;
   } else {
     return FALSO;
   }
 }
 
-boolean ativo(byte entrada){
-  if (digitalRead(entrada) == ALTO){
+boolean ativo(byte entrada) {
+  if (digitalRead(entrada) == ALTO) {
     return VERDADEIRO;
   } else {
     return FALSO;
   }
 }
 
-boolean inativo(byte entrada){
-  if (digitalRead(entrada) == BAIXO){
+boolean inativo(byte entrada) {
+  if (digitalRead(entrada) == BAIXO) {
     return VERDADEIRO;
   } else {
     return FALSO;
   }
 }
 
-void btUmClique(byte botao, int *estado, int *est_ant, unsigned long *atr_ant, boolean *funcao){
+void btUmClique(byte botao, int *estado, int *est_ant, unsigned long *atr_ant, boolean *funcao) {
   byte estado_atual = leEntrada(botao);
   if (estado_atual != *est_ant) {
     *atr_ant = millis();
@@ -321,13 +343,13 @@ void btUmClique(byte botao, int *estado, int *est_ant, unsigned long *atr_ant, b
   *est_ant = estado_atual;
 }
 
-void escreveSerial(String texto){
-  if (Serial){
+void escreveSerial(String texto) {
+  if (Serial) {
     Serial.println(texto);
   }
 }
 
-void reiniciaSaidas(){
+void reiniciaSaidas() {
   dosador_ligado = FALSO;
   datador_ligado = FALSO;
   conta_ciclo = 0;
@@ -341,7 +363,7 @@ void reiniciaSaidas(){
   desliga(led_teste_3); // Para testes
 }
 
-void resetCompleto(){
+void resetCompleto() {
   desliga(geral);
   desliga(dosador);
   desliga(datador);
@@ -356,18 +378,18 @@ void resetCompleto(){
 }
 
 
-void modoTeste(){
-  if (maquina_ligada){
+void modoTeste() {
+  if (maquina_ligada) {
     ligaFuncao(geral, NomeGeral);
   } else {
     desligaFuncao(geral, NomeGeral);
   }
-  if (dosador_ligado){
+  if (dosador_ligado) {
     ligaFuncao(dosador, NomeDosador);
   } else {
     desligaFuncao(dosador, NomeDosador);
   }
-  if (datador_ligado){
+  if (datador_ligado) {
     ligaFuncao(datador, NomeDatador);
   } else {
     desligaFuncao(datador, NomeDatador);
