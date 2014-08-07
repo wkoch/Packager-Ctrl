@@ -149,9 +149,9 @@ void loop() {
 
 void standBy(){
   if (stand_by and !alarme_ativo){
-    acionaGeral(); // Checa botão Geral
-    acionaDosador(); // Checa botão Dosador
-    acionaDatador(); // Checa botão Datador
+    acionaGeral(); // Monitora botão Geral
+    acionaDosador(); // Monitora botão Dosador
+    acionaDatador(); // Monitora botão Datador
     if (maquina_ligada){
       iniciaTrabalho();
     } else {
@@ -210,11 +210,11 @@ void acionaDatador(){
 }
 
 void funcaoReset() {
-  unsigned long tempo_atual = (millis()-inicio_ciclo);
-  if (!ciclo_resetado and ativo(sensor_reset)) {
+  unsigned long tempo_atual = millis();
+  if (!ciclo_resetado and (ativo(sensor_reset) or tempo_atual >= inicio_ciclo + ciclo_padrao)) {
     ciclo_resetado = true;
     conta_ciclo++;
-    escreveSerial((String) conta_ciclo);
+    escreveSerial((String) conta_ciclo + ": " + (String) (tempo_atual - inicio_ciclo));
     reiniciaCiclo();
   } else if (ciclo_resetado and tempo_atual > atraso_resets) {
     ciclo_resetado = false;
