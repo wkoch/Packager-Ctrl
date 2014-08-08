@@ -228,18 +228,16 @@ void funcaoReset() {
   unsigned long minimo = inicio_ciclo + ciclo_minimo;
   unsigned long maximo = inicio_ciclo + ciclo_maximo;
   sensorReset();
-  if (sensor_resetou || tempo_atual >= maximo) {
-    conta_ciclos++;
-    escreveSerial((String)conta_ciclos + ": " +
-                    (String)(tempo_atual - inicio_ciclo) + " / R:" +
-                    (String)ciclo_padrao);
-    soma_ciclos += tempo_atual - inicio_ciclo;
-    reiniciaCiclo();
-  }
-  if (tempo_atual < minimo && reset_liberado){
-    reset_liberado = FALSO;
-  } else if (tempo_atual > minimo && !reset_liberado){
+  if (tempo_atual >= minimo){
     reset_liberado = VERDADEIRO;
+    if (sensor_resetou || tempo_atual >= maximo) {
+      conta_ciclos++;
+      escreveSerial((String)conta_ciclos + ": " +
+                      (String)(tempo_atual - inicio_ciclo) + " / R:" +
+                      (String)ciclo_padrao);
+      soma_ciclos += tempo_atual - inicio_ciclo;
+      reiniciaCiclo();
+    }
   }
 }
 
@@ -247,6 +245,7 @@ void reiniciaCiclo() {
   inicio_ciclo = millis();
   cicloMedio();
   ciclo_resetado = VERDADEIRO;
+  reset_liberado = FALSO;
   sensor_resetou = FALSO;
   fotocelula_liberada = FALSO;
   fotocelula_cortou = FALSO;
