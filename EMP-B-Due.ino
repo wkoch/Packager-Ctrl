@@ -75,14 +75,14 @@ bool ciclo_resetado = FALSO;
 bool reset_falso = FALSO;
 unsigned long conta_ciclos = 0;
 boolean produzindo = FALSO;
-boolean reset_liberado = VERDADEIRO;
+boolean reset_liberado = FALSO;
 boolean sensor_resetou = FALSO;
 // Tempos do Ciclo
 // Ciclo
 unsigned long ciclo_padrao = 1500;
 unsigned long ciclo_minimo = 900;
 unsigned long ciclo_maximo = 2000;
-unsigned long primeiro_ciclo = 0;
+unsigned long soma_ciclos = 0;
 // Mandibula
 unsigned long inicio_mandibula = 550;
 unsigned long fim_mandibula = 1500;
@@ -174,6 +174,7 @@ void standBy() {
 void iniciaTrabalho() {
   if (!produzindo) {
     produzindo = VERDADEIRO;
+    reiniciaCiclo();
   }
   if (conta_ciclos >= 3) {
     ligaFuncao(led_teste_1, "Led Teste 1");  // Exemplo para teste.
@@ -222,75 +223,29 @@ void acionaDatador() {
 }
 
 void funcaoReset() {
-  if (produzindo){
-    unsigned long tempo_atual = millis();
-    if (primeiro_ciclo == 0) {
-      primeiro_ciclo = tempo_atual;
-      reiniciaCiclo();
-    }
-    unsigned long fim_ciclo = inicio_ciclo + ciclo_padrao;
-    // unsigned long novo_ciclo = tempo_atual - inicio_ciclo;
-    unsigned long minimo = inicio_ciclo + ciclo_minimo;
-    unsigned long maximo = inicio_ciclo + ciclo_maximo;
-    sensorReset();
-    if (sensor_resetou || tempo_atual >= maximo) {
-      conta_ciclos++;
-      escreveSerial((String)conta_ciclos + ": " +
-                      (String)(tempo_atual - inicio_ciclo) + " / R:" +
-                      (String)ciclo_padrao);
-      if (tempo_atual >= maximo){
-        ciclo_padrao = ciclo_maximo;
-      } else {
-        ciclo_padrao = ((tempo_atual - primeiro_ciclo) / (unsigned long)conta_ciclos);
-      }
-      reiniciaCiclo();
-    }
-    if (tempo_atual <= minimo){
-      reset_liberado = FALSO;
-    } else {
-      reset_liberado = VERDADEIRO;
-    }
+  unsigned long tempo_atual = millis();
+  unsigned long fim_ciclo = inicio_ciclo + ciclo_padrao;
+  unsigned long minimo = inicio_ciclo + ciclo_minimo;
+  unsigned long maximo = inicio_ciclo + ciclo_maximo;
+  sensorReset();
+  if (sensor_resetou || tempo_atual >= maximo) {
+    conta_ciclos++;
+    escreveSerial((String)conta_ciclos + ": " +
+                    (String)(tempo_atual - inicio_ciclo) + " / R:" +
+                    (String)ciclo_padrao);
+    soma_ciclos += tempo_atual - inicio_ciclo;
+    reiniciaCiclo();
   }
-
-  // unsigned long tempo_atual = millis();
-
-  // if (!ciclo_resetado) {
-  //   unsigned long fim_ciclo = inicio_ciclo + ciclo_padrao;
-  //   unsigned long novo_ciclo = tempo_atual - inicio_ciclo;
-  //   unsigned long minimo = inicio_ciclo + ciclo_minimo;
-  //   unsigned long maximo = inicio_ciclo + ciclo_maximo;
-  //   if ((tempo_atual >= maximo) || (ativo(sensor_reset))) {
-  //     if (minimo < novo_ciclo < maximo) {  //  || (tempo_atual >= maximo)
-  //       conta_ciclos++;
-  //       ciclo_resetado = VERDADEIRO;
-  //       escreveSerial((String)conta_ciclos + ": " +
-  //                     (String)(tempo_atual - inicio_ciclo) + " / R:" +
-  //                     (String)tempo_atual + "-" + (String)primeiro_ciclo + "/" +
-  //                     (String)conta_ciclos + "=" + (String)ciclo_padrao);
-  //       reiniciaCiclo();
-  //       ciclo_padrao =
-  //           ((tempo_atual - primeiro_ciclo) / (unsigned long)conta_ciclos);
-  //     } else if (novo_ciclo >= maximo) {
-  //       escreveSerial("Erro, reset maior que o maximo: " + (String)novo_ciclo +
-  //                     " / R:" + (String)maximo);
-  //       // reset_falso = VERDADEIRO;
-  //     }
-  //     // } else if (novo_ciclo <= minimo) {
-  //     //   escreveSerial("Erro, reset menor que o minimo: " + (String)
-  //     // novo_ciclo + " / R:" + (String) minimo);
-  //     //   reset_falso = VERDADEIRO;
-  //     // }
-  //   }
-  // } else {
-  //   if ((tempo_atual - inicio_ciclo) > ciclo_minimo) {
-  //     escreveSerial("Erro, reset menor que o minimo.");
-  //     ciclo_resetado = FALSO;
-  //   }
-  // }
+  if (tempo_atual < minimo && reset_liberado){
+    reset_liberado = FALSO;
+  } else if (tempo_atual > minimo && !reset_liberado){
+    reset_liberado = VERDADEIRO;
+  }
 }
 
 void reiniciaCiclo() {
   inicio_ciclo = millis();
+  cicloMedio();
   ciclo_resetado = VERDADEIRO;
   sensor_resetou = FALSO;
   fotocelula_liberada = FALSO;
@@ -300,6 +255,12 @@ void reiniciaCiclo() {
 void sensorReset(){
   if (ativo(sensor_reset) && reset_liberado){
     sensor_resetou = VERDADEIRO;
+  }
+}
+
+void cicloMedio(){
+  if (conta_ciclos > 0){
+    ciclo_padrao = soma_ciclos / conta_ciclos;
   }
 }
 
