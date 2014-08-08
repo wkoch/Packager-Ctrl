@@ -57,32 +57,31 @@ unsigned long atr_dosador = 0;  // Atraso do Botão Dosador
 int estbt_datador;              // Estado do Botão Datador
 int estbta_datador = BAIXO;     // Estado anterior do Botão Dosador
 unsigned long atr_datador = 0;  // Atraso do Botão Dosador
-                                // PWM das Soldas
+// PWM das Soldas
 const unsigned long ciclo_PWM = 1000;
 unsigned long tempo_PWM_vertical = 0;    // Tempo do PWM da solda vertical
 unsigned long tempo_PWM_horizontal = 0;  // Tempo do PWM da solda horizontal
 unsigned long tempo_PWM_datador = 0;     // Tempo do PWM da solda do Datador
-                                         // Programa
+// Programa
 boolean stand_by = FALSO;
 boolean maquina_ligada = FALSO;
 boolean dosador_ligado = FALSO;
 boolean datador_ligado = FALSO;
 boolean alarme_ativo = FALSO;
-unsigned long inicio_ciclo = millis();
-bool fotocelula_liberada = FALSO;
-bool fotocelula_cortou = FALSO;
-bool ciclo_resetado = FALSO;
-bool reset_falso = FALSO;
-unsigned long conta_ciclos = 0;
+boolean fotocelula_liberada = FALSO;
+boolean fotocelula_cortou = FALSO;
+boolean ciclo_resetado = FALSO;
 boolean produzindo = FALSO;
 boolean reset_liberado = FALSO;
 boolean sensor_resetou = FALSO;
 // Tempos do Ciclo
 // Ciclo
 unsigned long ciclo_padrao = 1500;
+unsigned long inicio_ciclo = 0;
 unsigned long ciclo_minimo = 900;
 unsigned long ciclo_maximo = 2000;
 unsigned long soma_ciclos = 0;
+unsigned long conta_ciclos = 0;
 // Mandibula
 unsigned long inicio_mandibula = 550;
 unsigned long fim_mandibula = 1500;
@@ -101,8 +100,6 @@ unsigned long fim_datador = 400;
 // Solda Vertical
 unsigned long inicio_soldas = 0;
 unsigned long fim_soldas = 400;
-// Atraso entre resets consecutivos
-unsigned long atraso_resets = ciclo_padrao / 3;
 
 void setup() {
   Serial.begin(9600);
@@ -114,7 +111,7 @@ void setup() {
   // Potenciômetros das Soldas
   pinMode(pot_solda_vertical, SENSOR);
   pinMode(pot_solda_horizontal, SENSOR);
-  pinMode(pot_solda_horizontal, SENSOR);
+  pinMode(pot_solda_datador, SENSOR);
   // Saídas PWM das Soldas
   pinMode(solda_vertical, SAIDA);
   pinMode(solda_horizontal, SAIDA);
@@ -174,7 +171,7 @@ void standBy() {
 void iniciaTrabalho() {
   if (!produzindo) {
     produzindo = VERDADEIRO;
-    reiniciaCiclo();
+    reiniciaCiclo(millis());
   }
   if (conta_ciclos >= 3) {
     ligaFuncao(led_teste_1, "Led Teste 1");  // Exemplo para teste.
@@ -228,21 +225,22 @@ void funcaoReset() {
   unsigned long minimo = inicio_ciclo + ciclo_minimo;
   unsigned long maximo = inicio_ciclo + ciclo_maximo;
   sensorReset();
-  if (tempo_atual >= minimo){
+  if (tempo_atual >= minimo) {
     reset_liberado = VERDADEIRO;
     if (sensor_resetou || tempo_atual >= maximo) {
       conta_ciclos++;
-      escreveSerial((String)conta_ciclos + ": " +
-                      (String)(tempo_atual - inicio_ciclo) + " / R:" +
-                      (String)ciclo_padrao);
-      soma_ciclos += tempo_atual - inicio_ciclo;
-      reiniciaCiclo();
+      escreveSerial((String)conta_ciclos + " " +
+                    (String)(tempo_atual - inicio_ciclo) + " " +
+                    (String)ciclo_padrao + " " + (String)tempo_atual + " " +
+                    (String)millis());
+      soma_ciclos += (tempo_atual - inicio_ciclo);
+      reiniciaCiclo(tempo_atual);
     }
   }
 }
 
-void reiniciaCiclo() {
-  inicio_ciclo = millis();
+void reiniciaCiclo(unsigned long tempo) {
+  inicio_ciclo = tempo;
   cicloMedio();
   ciclo_resetado = VERDADEIRO;
   reset_liberado = FALSO;
@@ -251,14 +249,14 @@ void reiniciaCiclo() {
   fotocelula_cortou = FALSO;
 }
 
-void sensorReset(){
-  if (ativo(sensor_reset) && reset_liberado){
+void sensorReset() {
+  if (ativo(sensor_reset) && reset_liberado) {
     sensor_resetou = VERDADEIRO;
   }
 }
 
-void cicloMedio(){
-  if (conta_ciclos > 0){
+void cicloMedio() {
+  if (conta_ciclos > 0) {
     ciclo_padrao = soma_ciclos / conta_ciclos;
   }
 }
