@@ -70,10 +70,8 @@ boolean datador_ligado = FALSO;
 boolean alarme_ativo = FALSO;
 boolean fotocelula_liberada = FALSO;
 boolean fotocelula_cortou = FALSO;
-boolean ciclo_resetado = FALSO;
 boolean produzindo = FALSO;
-boolean reset_liberado = FALSO;
-boolean sensor_resetou = FALSO;
+boolean resetado = FALSO;
 // Tempos do Ciclo
 // Ciclo
 unsigned long ciclo_padrao = 1500;
@@ -82,6 +80,9 @@ unsigned long ciclo_minimo = 900;
 unsigned long ciclo_maximo = 2000;
 unsigned long soma_ciclos = 0;
 unsigned long conta_ciclos = 0;
+unsigned long fim_ciclo = 0;
+unsigned long minimo = 0;
+unsigned long maximo = 0;
 // Mandibula
 unsigned long inicio_mandibula = 550;
 unsigned long fim_mandibula = 1500;
@@ -221,13 +222,15 @@ void acionaDatador() {
 
 void funcaoReset() {
   unsigned long tempo_atual = millis();
-  unsigned long fim_ciclo = inicio_ciclo + ciclo_padrao;
-  unsigned long minimo = inicio_ciclo + ciclo_minimo;
-  unsigned long maximo = inicio_ciclo + ciclo_maximo;
-  sensorReset();
+  if (resetado){
+    fim_ciclo = inicio_ciclo + ciclo_padrao;
+    minimo = inicio_ciclo + ciclo_minimo;
+    maximo = inicio_ciclo + ciclo_maximo;
+    resetado = FALSO;
+  }
+
   if (tempo_atual >= minimo) {
-    reset_liberado = VERDADEIRO;
-    if (sensor_resetou || tempo_atual >= maximo) {
+    if (ativo(sensor_reset) || tempo_atual == maximo) {
       conta_ciclos++;
       escreveSerial((String)conta_ciclos + " " +
                     (String)(tempo_atual - inicio_ciclo) + " " +
@@ -242,17 +245,9 @@ void funcaoReset() {
 void reiniciaCiclo(unsigned long tempo) {
   inicio_ciclo = tempo;
   cicloMedio();
-  ciclo_resetado = VERDADEIRO;
-  reset_liberado = FALSO;
-  sensor_resetou = FALSO;
+  resetado = VERDADEIRO;
   fotocelula_liberada = FALSO;
   fotocelula_cortou = FALSO;
-}
-
-void sensorReset() {
-  if (ativo(sensor_reset) && reset_liberado) {
-    sensor_resetou = VERDADEIRO;
-  }
 }
 
 void cicloMedio() {
