@@ -5,8 +5,8 @@
  Controlador de Empacotadeira com Arduino Due.
 */
 
-// Constantes
-// Entradas
+// CONSTANTES
+// ENTRADAS
 const byte bt_geral = 22;        // Entrada do botão de Liga/Desliga Geral
 const byte bt_dosador = 24;      // Entrada do botão de Liga/Desliga do Dosador
 const byte bt_datador = 26;      // Entrada do botão de Liga/Desliga do Datador
@@ -17,19 +17,21 @@ const byte sensor_maquina = 36;  // Sensor de Segurança da Porta da Máquina
 const byte pot_solda_vertical = A0;    // Potenciômetro da Solda Vertical
 const byte pot_solda_horizontal = A1;  // Potenciômetro da Solda Vertical
 const byte pot_solda_datador = A2;     // Potenciômetro da Solda Vertical
-                                       // Saídas
-const byte geral = 40;                 // Saída Geral
-const byte dosador = 42;               // Saída do Dosador
-const byte datador = 44;               // Saída do Datador
-const byte solda_vertical = 33;        // Saída da Solda Vertical
-const byte solda_horizontal = 35;      // Saída da Solda Horizontal
-const byte solda_datador = 37;         // Saída da Solda do Datador
-const byte led_teste_1 = 23;
-const byte led_teste_2 = 25;
-const byte led_teste_3 = 27;
 
-// Variáveis
-// Configurações
+// SAÍDAS
+const byte geral = 23;                 // Saída Geral
+const byte dosador = 25;               // Saída do Dosador
+const byte datador = 27;               // Saída do Datador
+const byte mandibula = 40;
+const byte solda_vertical_PWM = 33;        // Saída da Solda Vertical
+const byte solda_horizontal_PWM = 35;      // Saída da Solda Horizontal
+const byte solda_datador_PWM = 37;         // Saída da Solda do Datador
+// REMOVER
+const byte saida_teste = 2;
+const byte entrada_teste = 4;
+
+// VARIÁVEIS
+// CONFIGURAÇÕES
 #define BOTAO INPUT_PULLUP  // INPUT ou INPUT_PULLUP
 #define SENSOR INPUT        // INPUT ou INPUT_PULLUP
 #define SAIDA OUTPUT
@@ -39,14 +41,17 @@ const byte led_teste_3 = 27;
 #define DESLIGA LOW
 #define VERDADEIRO true
 #define FALSO false
-// Nomes de Funções
+
+// NOMES DE FUNÇÕES
 #define NomeGeral "Geral"
 #define NomeDosador "Dosador"
 #define NomeDatador "Datador"
+#define NomeMandibula "Mandibula"
 #define NomeSoldaVertical "Solda Vertical"
 #define NomeSoldaHorizontal "Solda Horizontal"
 #define NomeSoldaDatador "Solda Datador"
-// Botões de Entrada Um Clique
+
+// BOTOÕES UM-CLIQUE
 unsigned long atraso = 50;
 int estbt_geral;                // Estado do Botão Geral
 int estbta_geral = BAIXO;       // Estado anterior do Botão Geral
@@ -57,12 +62,14 @@ unsigned long atr_dosador = 0;  // Atraso do Botão Dosador
 int estbt_datador;              // Estado do Botão Datador
 int estbta_datador = BAIXO;     // Estado anterior do Botão Dosador
 unsigned long atr_datador = 0;  // Atraso do Botão Dosador
-// PWM das Soldas
+
+// PWM DAS SOLDAS
 const unsigned long ciclo_PWM = 1000;
 unsigned long tempo_PWM_vertical = 0;    // Tempo do PWM da solda vertical
 unsigned long tempo_PWM_horizontal = 0;  // Tempo do PWM da solda horizontal
 unsigned long tempo_PWM_datador = 0;     // Tempo do PWM da solda do Datador
-// Programa
+
+// MODOS DE TRABALHO
 boolean stand_by = FALSO;
 boolean maquina_ligada = FALSO;
 boolean dosador_ligado = FALSO;
@@ -72,9 +79,12 @@ boolean fotocelula_liberada = FALSO;
 boolean fotocelula_cortou = FALSO;
 boolean produzindo = FALSO;
 boolean resetado = FALSO;
-// Tempos do Ciclo
-// Ciclo
+
+// TEMPOS DE CICLO
+// CONTROLE DE CICLO
+unsigned long tempo_atual = millis();
 unsigned long ciclo_padrao = 1500;
+unsigned long ciclo_padrao_anterior = ciclo_padrao;
 unsigned long inicio_ciclo = 0;
 unsigned long ciclo_minimo = 900;
 unsigned long ciclo_maximo = 2000;
@@ -83,65 +93,70 @@ unsigned long conta_ciclos = 0;
 unsigned long fim_ciclo = 0;
 unsigned long minimo = 0;
 unsigned long maximo = 0;
-// Mandibula
+
+// MANDÍBULA
 unsigned long inicio_mandibula = 550;
 unsigned long fim_mandibula = 1500;
-// Fotocélula
+
+// FOTOCÉLULA
 unsigned long inicio_fotocelula = 1250;
 unsigned long fim_fotocelula = 1400;
-// Faca
+
+// FACA
 unsigned long inicio_faca = 600;
 unsigned long fim_faca = 800;
-// Refrigeração
+
+// REFRIGERAÇÃO
 unsigned long inicio_refrigeracao = 800;
 unsigned long fim_refrigeracao = 1450;
-// Datador
+
+// DATADOR
 unsigned long inicio_datador = 0;
 unsigned long fim_datador = 400;
-// Solda Vertical
+
+// SOLDAS VERTICAL E HORIZONTAL
 unsigned long inicio_soldas = 0;
 unsigned long fim_soldas = 400;
 
 void setup() {
   Serial.begin(9600);
-  // Botões
+  // BOTÕES
   pinMode(bt_geral, BOTAO);
   pinMode(bt_dosador, BOTAO);
   pinMode(bt_datador, BOTAO);
   pinMode(sensor_reset, BOTAO);  // Mudar para Sensor após os testes.
-  // Potenciômetros das Soldas
+  // POTENCIÔMETROS DAS SOLDAS
   pinMode(pot_solda_vertical, SENSOR);
   pinMode(pot_solda_horizontal, SENSOR);
   pinMode(pot_solda_datador, SENSOR);
-  // Saídas PWM das Soldas
-  pinMode(solda_vertical, SAIDA);
-  pinMode(solda_horizontal, SAIDA);
-  pinMode(solda_datador, SAIDA);
-  // Sensores
+  // SAÍDAS PWM DAS SOLDAS
+  pinMode(mandibula, SAIDA);
+  pinMode(solda_vertical_PWM, SAIDA);
+  pinMode(solda_horizontal_PWM, SAIDA);
+  pinMode(solda_datador_PWM, SAIDA);
+  // SENSORES
   pinMode(sensor_porta, BOTAO);
   pinMode(sensor_painel, BOTAO);
   pinMode(sensor_maquina, BOTAO);
 
+  // REMOVER
+  pinMode(saida_teste, SAIDA);
+
+
   pinMode(geral, SAIDA);
   pinMode(dosador, SAIDA);
   pinMode(datador, SAIDA);
-  pinMode(led_teste_1, SAIDA);
-  pinMode(led_teste_2, SAIDA);
-  pinMode(led_teste_3, SAIDA);
 
-  // Define estado inicial das saídas
+  // ESTADO INICIAL DAS SAÍDAS
   resetCompleto();
 }
 
 void loop() {
   modoAlarme();
 
-  geraPWM(pot_solda_vertical, &tempo_PWM_vertical, solda_vertical,
-          NomeSoldaVertical);
-  geraPWM(pot_solda_horizontal, &tempo_PWM_horizontal, solda_horizontal,
-          NomeSoldaHorizontal);
-  geraPWM(pot_solda_datador, &tempo_PWM_datador, solda_datador,
-          NomeSoldaDatador);
+  geraPWM(pot_solda_vertical, &tempo_PWM_vertical, solda_vertical_PWM);
+  geraPWM(pot_solda_horizontal, &tempo_PWM_horizontal, solda_horizontal_PWM);
+  geraPWM(pot_solda_datador, &tempo_PWM_datador, solda_datador_PWM);
 
   if (!alarme_ativo) {
     standBy();
@@ -175,8 +190,8 @@ void iniciaTrabalho() {
     reiniciaCiclo(millis());
   }
   if (conta_ciclos >= 3) {
-    ligaFuncao(led_teste_1, "Led Teste 1");  // Exemplo para teste.
-                                             // ciclo de trabalho
+    funcaoSimples(mandibula, NomeMandibula, inicio_mandibula, fim_mandibula);
+    funcaoSimples(saida_teste, "Teste", 1500, 1501);
   }
   funcaoReset();
 }
@@ -221,12 +236,13 @@ void acionaDatador() {
 }
 
 void funcaoReset() {
-  unsigned long tempo_atual = millis();
+  tempo_atual = millis();
   if (resetado){
     fim_ciclo = inicio_ciclo + ciclo_padrao;
     minimo = inicio_ciclo + ciclo_minimo;
     maximo = inicio_ciclo + ciclo_maximo;
     resetado = FALSO;
+    reiniciaSaidas();
   }
 
   if (tempo_atual >= minimo) {
@@ -252,11 +268,13 @@ void reiniciaCiclo(unsigned long tempo) {
 
 void cicloMedio() {
   if (conta_ciclos > 0) {
+    ciclo_padrao_anterior = ciclo_padrao;
     ciclo_padrao = soma_ciclos / conta_ciclos;
+    inicio_mandibula *= (long)((float)ciclo_padrao_anterior / (float)ciclo_padrao);
   }
 }
 
-void geraPWM(byte pot, unsigned long *inicio, byte saida, String nome) {
+void geraPWM(byte pot, unsigned long *inicio, byte saida) {
   unsigned long ativo = map(analogRead(pot), 0, 1023, 0, ciclo_PWM);
   unsigned long inativo = ciclo_PWM - ativo;
   if (maquina_ligada && !alarme_ativo) {
@@ -273,16 +291,32 @@ void geraPWM(byte pot, unsigned long *inicio, byte saida, String nome) {
   }
 }
 
+// FUNÇÕES DE CICLO
+
+void funcaoSimples(const byte saida, String nome, unsigned long inicio, unsigned long fim) {
+  inicio += inicio_ciclo;
+  fim += inicio_ciclo;
+  if ((tempo_atual >= inicio) && (tempo_atual < fim) && desligado(saida)) {
+    ligaFuncao(saida, nome);
+  } else if (tempo_atual >= fim) {
+    desligaFuncao(saida, nome);
+  }
+}
+
 // FERRAMENTAS AUXILIARES
 
 byte leEntrada(byte pino) { return digitalRead(pino); }
 
 void liga(byte saida) { digitalWrite(saida, LIGA); }
 
-void ligaFuncao(byte saida, String texto) {
+void ligaFuncao(byte saida, String nome) {
   if (desligado(saida)) {
     liga(saida);
-    escreveSerial(texto + " Ligado.");
+    if (ligado(saida)){
+      escreveSerial(nome + " Ligado.");
+    } else {
+      escreveSerial("Ocorreu um erro ao ligar " + nome);
+    }
   }
 }
 
@@ -352,31 +386,23 @@ void escreveSerial(String texto) {
 }
 
 void reiniciaSaidas() {
-  dosador_ligado = FALSO;
-  datador_ligado = FALSO;
-  conta_ciclos = 0;
-
-  desligaFuncao(geral, NomeGeral);
   desligaFuncao(dosador, NomeDosador);
   desligaFuncao(datador, NomeDatador);
-
-  desliga(led_teste_1);  // Para testes
-  desliga(led_teste_2);  // Para testes
-  desliga(led_teste_3);  // Para testes
+  desligaFuncao(mandibula, NomeMandibula);
 }
 
 void resetCompleto() {
+  dosador_ligado = FALSO;
+  datador_ligado = FALSO;
+  conta_ciclos = 0;
   desliga(geral);
   desliga(dosador);
   desliga(datador);
+  desliga(mandibula);
 
-  desliga(solda_vertical);
-  desliga(solda_horizontal);
-  desliga(solda_datador);
-
-  desliga(led_teste_1);  // Para testes
-  desliga(led_teste_2);  // Para testes
-  desliga(led_teste_3);  // Para testes
+  desliga(solda_vertical_PWM);
+  desliga(solda_horizontal_PWM);
+  desliga(solda_datador_PWM);
 }
 
 void modoTeste() {
