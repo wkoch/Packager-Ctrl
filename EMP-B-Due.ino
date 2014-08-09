@@ -21,8 +21,13 @@ const byte pot_solda_datador = A2;     // Potenciômetro da Solda Vertical
 // SAÍDAS
 const byte geral = 23;                 // Saída Geral
 const byte dosador = 25;               // Saída do Dosador
-const byte datador = 27;               // Saída do Datador
+const byte led_datador = 27;               // Saída do Datador
 const byte mandibula = 40;
+const byte faca = 42;
+const byte refrigeracao = 44;
+const byte datador = 46;
+const byte soldas = 48;
+
 const byte solda_vertical_PWM = 33;        // Saída da Solda Vertical
 const byte solda_horizontal_PWM = 35;      // Saída da Solda Horizontal
 const byte solda_datador_PWM = 37;         // Saída da Solda do Datador
@@ -47,6 +52,9 @@ const byte entrada_teste = 4;
 #define NomeDosador "Dosador"
 #define NomeDatador "Datador"
 #define NomeMandibula "Mandibula"
+#define NomeFaca "Faca"
+#define NomeRefrigeracao "Refrigeracao"
+#define NomeSoldas "Soldas"
 #define NomeSoldaVertical "Solda Vertical"
 #define NomeSoldaHorizontal "Solda Horizontal"
 #define NomeSoldaDatador "Solda Datador"
@@ -83,7 +91,7 @@ boolean resetado = FALSO;
 // TEMPOS DE CICLO
 // CONTROLE DE CICLO
 unsigned long tempo_atual = millis();
-unsigned long ciclo_padrao = 1500;
+unsigned long ciclo_padrao = 2000;
 unsigned long ciclo_padrao_anterior = ciclo_padrao;
 unsigned long inicio_ciclo = 0;
 unsigned long ciclo_minimo = 900;
@@ -111,11 +119,11 @@ unsigned long inicio_refrigeracao = 800;
 unsigned long fim_refrigeracao = 1450;
 
 // DATADOR
-unsigned long inicio_datador = 0;
+unsigned long inicio_datador = 1;
 unsigned long fim_datador = 400;
 
 // SOLDAS VERTICAL E HORIZONTAL
-unsigned long inicio_soldas = 0;
+unsigned long inicio_soldas = 1;
 unsigned long fim_soldas = 400;
 
 void setup() {
@@ -141,11 +149,16 @@ void setup() {
 
   // REMOVER
   pinMode(saida_teste, SAIDA);
+  pinMode(entrada_teste, SENSOR);
 
 
   pinMode(geral, SAIDA);
   pinMode(dosador, SAIDA);
+  pinMode(led_datador, SAIDA);
+  pinMode(faca, SAIDA);
+  pinMode(refrigeracao, SAIDA);
   pinMode(datador, SAIDA);
+  pinMode(soldas, SAIDA);
 
   // ESTADO INICIAL DAS SAÍDAS
   resetCompleto();
@@ -191,7 +204,11 @@ void iniciaTrabalho() {
   }
   if (conta_ciclos >= 3) {
     funcaoSimples(mandibula, NomeMandibula, inicio_mandibula, fim_mandibula);
-    funcaoSimples(saida_teste, "Teste", 1500, 1501);
+    funcaoSimples(faca, NomeFaca, inicio_faca, fim_faca);
+    funcaoSimples(refrigeracao, NomeRefrigeracao, inicio_refrigeracao, fim_refrigeracao);
+    // funcaoSimples(datador, NomeDatador, inicio_datador, fim_datador);
+    // funcaoSimples(soldas, NomeSoldas, inicio_soldas, fim_soldas);
+    // funcaoSimples(saida_teste, "Teste", 1500, 1600);
   }
   funcaoReset();
 }
@@ -246,14 +263,15 @@ void funcaoReset() {
   }
 
   if (tempo_atual >= minimo) {
-    if (ativo(sensor_reset) || tempo_atual == maximo) {
+    if (ativo(sensor_reset) || inativo(entrada_teste) || tempo_atual == maximo) {
       conta_ciclos++;
-      escreveSerial((String)conta_ciclos + " " +
-                    (String)(tempo_atual - inicio_ciclo) + " " +
-                    (String)ciclo_padrao + " " + (String)tempo_atual + " " +
-                    (String)millis());
+      unsigned long ciclo_temp = inicio_ciclo;
       soma_ciclos += (tempo_atual - inicio_ciclo);
       reiniciaCiclo(tempo_atual);
+      escreveSerial("\t" + (String)conta_ciclos + " " +
+                    (String)(tempo_atual - ciclo_temp) + " " +
+                    (String)ciclo_padrao + " " + (String)tempo_atual + " " +
+                    (String)millis());
     }
   }
 }
@@ -270,21 +288,31 @@ void cicloMedio() {
   if (conta_ciclos > 0) {
     ciclo_padrao_anterior = ciclo_padrao;
     ciclo_padrao = soma_ciclos / conta_ciclos;
-    inicio_mandibula *= (long)((float)ciclo_padrao_anterior / (float)ciclo_padrao);
+    // AJUSTE DINÂMICO DOS TEMPOS DAS FUNÇÕES
+    inicio_mandibula = (inicio_mandibula * ciclo_padrao) / ciclo_padrao_anterior;
+    fim_mandibula = (fim_mandibula * ciclo_padrao) / ciclo_padrao_anterior;
+    inicio_faca = (inicio_faca * ciclo_padrao) / ciclo_padrao_anterior;
+    fim_faca = (fim_faca * ciclo_padrao) / ciclo_padrao_anterior;
+    inicio_refrigeracao = (inicio_refrigeracao * ciclo_padrao) / ciclo_padrao_anterior;
+    fim_refrigeracao = (fim_refrigeracao * ciclo_padrao) / ciclo_padrao_anterior;
+    inicio_datador = (inicio_datador * ciclo_padrao) / ciclo_padrao_anterior;
+    fim_datador = (fim_datador * ciclo_padrao) / ciclo_padrao_anterior;
+    inicio_soldas = (inicio_soldas * ciclo_padrao) / ciclo_padrao_anterior;
+    fim_soldas = (fim_soldas * ciclo_padrao) / ciclo_padrao_anterior;
   }
 }
 
 void geraPWM(byte pot, unsigned long *inicio, byte saida) {
-  unsigned long ativo = map(analogRead(pot), 0, 1023, 0, ciclo_PWM);
+  unsigned long ativo = *inicio + map(analogRead(pot), 0, 1023, 0, ciclo_PWM);
   unsigned long inativo = ciclo_PWM - ativo;
+  unsigned long pwm = *inicio + ciclo_PWM;
   if (maquina_ligada && !alarme_ativo) {
-    if (millis() > *inicio && millis() <= (*inicio + ativo)) {
+    if (tempo_atual > *inicio && tempo_atual <= ativo) {
       liga(saida);
-    } else if (millis() > (*inicio + ativo) &&
-               millis() < (*inicio + ciclo_PWM)) {
+    } else if (tempo_atual > ativo && tempo_atual < pwm) {
       desliga(saida);
-    } else if (millis() >= (*inicio + ciclo_PWM)) {
-      *inicio = millis();
+    } else if (tempo_atual >= pwm) {
+      *inicio = tempo_atual;
     }
   } else {
     desliga(saida);
@@ -296,8 +324,10 @@ void geraPWM(byte pot, unsigned long *inicio, byte saida) {
 void funcaoSimples(const byte saida, String nome, unsigned long inicio, unsigned long fim) {
   inicio += inicio_ciclo;
   fim += inicio_ciclo;
-  if ((tempo_atual >= inicio) && (tempo_atual < fim) && desligado(saida)) {
-    ligaFuncao(saida, nome);
+  if (desligado(saida)){
+    if (tempo_atual >= inicio && tempo_atual < fim) {
+      ligaFuncao(saida, nome);
+    }
   } else if (tempo_atual >= fim) {
     desligaFuncao(saida, nome);
   }
@@ -313,7 +343,7 @@ void ligaFuncao(byte saida, String nome) {
   if (desligado(saida)) {
     liga(saida);
     if (ligado(saida)){
-      escreveSerial(nome + " Ligado.");
+      escreveSerial(">> " + nome + " Ligado.");
     } else {
       escreveSerial("Ocorreu um erro ao ligar " + nome);
     }
@@ -322,10 +352,10 @@ void ligaFuncao(byte saida, String nome) {
 
 void desliga(byte saida) { digitalWrite(saida, DESLIGA); }
 
-void desligaFuncao(byte saida, String texto) {
+void desligaFuncao(byte saida, String nome) {
   if (ligado(saida)) {
     desliga(saida);
-    escreveSerial(texto + " Desligado.");
+    escreveSerial("<< " + nome + " Desligado.");
   }
 }
 
@@ -387,8 +417,12 @@ void escreveSerial(String texto) {
 
 void reiniciaSaidas() {
   desligaFuncao(dosador, NomeDosador);
-  desligaFuncao(datador, NomeDatador);
+  desligaFuncao(led_datador, NomeDatador);
   desligaFuncao(mandibula, NomeMandibula);
+  desligaFuncao(faca, NomeFaca);
+  desligaFuncao(refrigeracao, NomeRefrigeracao);
+  desligaFuncao(datador, NomeDatador);
+  desligaFuncao(soldas, NomeSoldas);
 }
 
 void resetCompleto() {
@@ -397,8 +431,12 @@ void resetCompleto() {
   conta_ciclos = 0;
   desliga(geral);
   desliga(dosador);
-  desliga(datador);
+  desliga(led_datador);
   desliga(mandibula);
+  desliga(faca);
+  desliga(refrigeracao);
+  desliga(datador);
+  desliga(soldas);
 
   desliga(solda_vertical_PWM);
   desliga(solda_horizontal_PWM);
@@ -417,7 +455,7 @@ void modoTeste() {
     desligaFuncao(dosador, NomeDosador);
   }
   if (datador_ligado) {
-    ligaFuncao(datador, NomeDatador);
+    ligaFuncao(led_datador, NomeDatador);
   } else {
     desligaFuncao(datador, NomeDatador);
   }
