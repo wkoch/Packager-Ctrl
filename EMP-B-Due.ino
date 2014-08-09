@@ -101,6 +101,7 @@ unsigned long conta_ciclos = 0;
 unsigned long fim_ciclo = 0;
 unsigned long minimo = 0;
 unsigned long maximo = 0;
+unsigned long ultimo_ciclo = ciclo_padrao;
 
 // MANDÍBULA
 unsigned long inicio_mandibula = 550;
@@ -119,11 +120,11 @@ unsigned long inicio_refrigeracao = 800;
 unsigned long fim_refrigeracao = 1450;
 
 // DATADOR
-unsigned long inicio_datador = 1;
+unsigned long inicio_datador = 5;
 unsigned long fim_datador = 400;
 
 // SOLDAS VERTICAL E HORIZONTAL
-unsigned long inicio_soldas = 1;
+unsigned long inicio_soldas = 5;
 unsigned long fim_soldas = 400;
 
 void setup() {
@@ -203,10 +204,10 @@ void iniciaTrabalho() {
     reiniciaCiclo(millis());
   }
   if (conta_ciclos >= 3) {
-    funcaoSimples(mandibula, NomeMandibula, inicio_mandibula, fim_mandibula);
-    funcaoSimples(faca, NomeFaca, inicio_faca, fim_faca);
-    funcaoSimples(refrigeracao, NomeRefrigeracao, inicio_refrigeracao, fim_refrigeracao);
-    // funcaoSimples(datador, NomeDatador, inicio_datador, fim_datador);
+    // funcaoSimples(mandibula, NomeMandibula, inicio_mandibula, fim_mandibula);
+    // funcaoSimples(faca, NomeFaca, inicio_faca, fim_faca);
+    // funcaoSimples(refrigeracao, NomeRefrigeracao, inicio_refrigeracao, fim_refrigeracao);
+    funcaoSimples(datador, NomeDatador, inicio_datador, fim_datador);
     // funcaoSimples(soldas, NomeSoldas, inicio_soldas, fim_soldas);
     // funcaoSimples(saida_teste, "Teste", 1500, 1600);
   }
@@ -265,11 +266,11 @@ void funcaoReset() {
   if (tempo_atual >= minimo) {
     if (ativo(sensor_reset) || inativo(entrada_teste) || tempo_atual == maximo) {
       conta_ciclos++;
-      unsigned long ciclo_temp = inicio_ciclo;
+      ultimo_ciclo = tempo_atual - inicio_ciclo;
       soma_ciclos += (tempo_atual - inicio_ciclo);
       reiniciaCiclo(tempo_atual);
       escreveSerial("\t" + (String)conta_ciclos + " " +
-                    (String)(tempo_atual - ciclo_temp) + " " +
+                    (String)ultimo_ciclo + " " +
                     (String)ciclo_padrao + " " + (String)tempo_atual + " " +
                     (String)millis());
     }
@@ -287,18 +288,27 @@ void reiniciaCiclo(unsigned long tempo) {
 void cicloMedio() {
   if (conta_ciclos > 0) {
     ciclo_padrao_anterior = ciclo_padrao;
-    ciclo_padrao = soma_ciclos / conta_ciclos;
+    ciclo_padrao = ultimo_ciclo; //soma_ciclos / conta_ciclos;
     // AJUSTE DINÂMICO DOS TEMPOS DAS FUNÇÕES
-    inicio_mandibula = (inicio_mandibula * ciclo_padrao) / ciclo_padrao_anterior;
-    fim_mandibula = (fim_mandibula * ciclo_padrao) / ciclo_padrao_anterior;
-    inicio_faca = (inicio_faca * ciclo_padrao) / ciclo_padrao_anterior;
-    fim_faca = (fim_faca * ciclo_padrao) / ciclo_padrao_anterior;
-    inicio_refrigeracao = (inicio_refrigeracao * ciclo_padrao) / ciclo_padrao_anterior;
-    fim_refrigeracao = (fim_refrigeracao * ciclo_padrao) / ciclo_padrao_anterior;
-    inicio_datador = (inicio_datador * ciclo_padrao) / ciclo_padrao_anterior;
-    fim_datador = (fim_datador * ciclo_padrao) / ciclo_padrao_anterior;
-    inicio_soldas = (inicio_soldas * ciclo_padrao) / ciclo_padrao_anterior;
-    fim_soldas = (fim_soldas * ciclo_padrao) / ciclo_padrao_anterior;
+    ajustaCiclo(&inicio_mandibula);
+    ajustaCiclo(&fim_mandibula);
+    ajustaCiclo(&inicio_faca);
+    ajustaCiclo(&fim_faca);
+    ajustaCiclo(&inicio_refrigeracao);
+    ajustaCiclo(&fim_refrigeracao);
+    ajustaCiclo(&inicio_datador);
+    ajustaCiclo(&fim_datador);
+    ajustaCiclo(&inicio_soldas);
+    ajustaCiclo(&fim_soldas);
+  }
+}
+
+void ajustaCiclo(unsigned long *variavel){
+  unsigned long tempo = (*variavel * ciclo_padrao) / ciclo_padrao_anterior;
+  if (tempo <= 0){
+    *variavel = 1;
+  } else {
+    *variavel = tempo;
   }
 }
 
@@ -343,7 +353,7 @@ void ligaFuncao(byte saida, String nome) {
   if (desligado(saida)) {
     liga(saida);
     if (ligado(saida)){
-      escreveSerial(">> " + nome + " Ligado.");
+      escreveSerial(">> " + nome + " Ligado." + (String)inicio_datador);
     } else {
       escreveSerial("Ocorreu um erro ao ligar " + nome);
     }
@@ -355,7 +365,7 @@ void desliga(byte saida) { digitalWrite(saida, DESLIGA); }
 void desligaFuncao(byte saida, String nome) {
   if (ligado(saida)) {
     desliga(saida);
-    escreveSerial("<< " + nome + " Desligado.");
+    escreveSerial("<< " + nome + " Desligado." + (String) fim_datador);
   }
 }
 
@@ -457,6 +467,6 @@ void modoTeste() {
   if (datador_ligado) {
     ligaFuncao(led_datador, NomeDatador);
   } else {
-    desligaFuncao(datador, NomeDatador);
+    desligaFuncao(led_datador, NomeDatador);
   }
 }
