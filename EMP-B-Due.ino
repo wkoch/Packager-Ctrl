@@ -5,7 +5,28 @@
  Controlador de Empacotadeira com Arduino Due.
 */
 
-// CONSTANTES
+// CONFIGURAÇÕES
+// GERAL
+#define BOTAO INPUT_PULLUP  // INPUT ou INPUT_PULLUP
+#define SENSOR INPUT        // INPUT ou INPUT_PULLUP
+#define SAIDA OUTPUT
+#define ALTO LOW    // Deve ser invertido para INPUT_PULLUP
+#define BAIXO HIGH  // Deve ser invertido para INPUT_PULLUP
+#define LIGA HIGH
+#define DESLIGA LOW
+#define VERDADEIRO true
+#define FALSO false
+// NOMES DE FUNÇÕES
+#define NomeGeral "Geral" // Acionamento da máquina
+#define NomeDosador "Dosador" // Acionamento do Dosador
+#define NomeDatador "Datador" // Liberação do Datador
+#define NomeMandibula "Mandibula" // Ciclo da Mandíbula
+#define NomeFaca "Faca" // Ciclo da Faca
+#define NomeRefrigeracao "Refrigeracao" // Ciclo da Refrigeração
+#define NomeSoldas "Soldas" // Ciclo das Soldas Vertical e Horizontal
+#define NomeSoldaVertical "Solda Vertical"
+#define NomeSoldaHorizontal "Solda Horizontal"
+#define NomeSoldaDatador "Solda Datador"
 // ENTRADAS
 const byte bt_geral = 22;        // Entrada do botão de Liga/Desliga Geral
 const byte bt_dosador = 24;      // Entrada do botão de Liga/Desliga do Dosador
@@ -17,11 +38,10 @@ const byte sensor_maquina = 36;  // Sensor de Segurança da Porta da Máquina
 const byte pot_solda_vertical = A0;    // Potenciômetro da Solda Vertical
 const byte pot_solda_horizontal = A1;  // Potenciômetro da Solda Vertical
 const byte pot_solda_datador = A2;     // Potenciômetro da Solda Vertical
-
 // SAÍDAS
-const byte geral = 23;                 // Saída Geral
-const byte dosador = 25;               // Saída do Dosador
-const byte led_datador = 27;               // Saída do Datador
+const byte geral = 23; // Saída Geral
+const byte dosador = 25; // Saída do Dosador
+const byte led_datador = 27; // Saída do Datador
 const byte mandibula = 40;
 const byte faca = 42;
 const byte refrigeracao = 44;
@@ -31,36 +51,35 @@ const byte soldas = 48;
 const byte solda_vertical_PWM = 33;        // Saída da Solda Vertical
 const byte solda_horizontal_PWM = 35;      // Saída da Solda Horizontal
 const byte solda_datador_PWM = 37;         // Saída da Solda do Datador
+// TEMPOS DE CICLO
+unsigned long ciclo_padrao = 2000;
+const unsigned long ciclo_minimo = 900;
+const unsigned long ciclo_maximo = 2000;
+// MANDÍBULA
+const unsigned int inicio_mandibula = 550;
+const unsigned int fim_mandibula = 1500;
+// FOTOCÉLULA
+const unsigned int inicio_fotocelula = 1250;
+const unsigned int fim_fotocelula = 1400;
+// FACA
+const unsigned int inicio_faca = 600;
+const unsigned int fim_faca = 800;
+// REFRIGERAÇÃO
+const unsigned int inicio_refrigeracao = 800;
+const unsigned long fim_refrigeracao = 1450;
+// DATADOR
+const unsigned int inicio_datador = 5;
+const unsigned int fim_datador = 400;
+// SOLDAS VERTICAL E HORIZONTAL
+const unsigned int inicio_soldas = 5;
+const unsigned int fim_soldas = 400;
 
-
-// REMOVER
+// REMOVER >>
 const byte saida_teste = 2;
 const byte entrada_teste = 4;
+// << REMOVER
 
 // VARIÁVEIS
-// CONFIGURAÇÕES
-#define BOTAO INPUT_PULLUP  // INPUT ou INPUT_PULLUP
-#define SENSOR INPUT        // INPUT ou INPUT_PULLUP
-#define SAIDA OUTPUT
-#define ALTO LOW    // Deve ser invertido para INPUT_PULLUP
-#define BAIXO HIGH  // Deve ser invertido para INPUT_PULLUP
-#define LIGA HIGH
-#define DESLIGA LOW
-#define VERDADEIRO true
-#define FALSO false
-
-// NOMES DE FUNÇÕES
-#define NomeGeral "Geral"
-#define NomeDosador "Dosador"
-#define NomeDatador "Datador"
-#define NomeMandibula "Mandibula"
-#define NomeFaca "Faca"
-#define NomeRefrigeracao "Refrigeracao"
-#define NomeSoldas "Soldas"
-#define NomeSoldaVertical "Solda Vertical"
-#define NomeSoldaHorizontal "Solda Horizontal"
-#define NomeSoldaDatador "Solda Datador"
-
 // BOTOÕES UM-CLIQUE
 unsigned long atraso = 50;
 int estbt_geral;                // Estado do Botão Geral
@@ -93,11 +112,8 @@ boolean resetado = FALSO;
 // TEMPOS DE CICLO
 // CONTROLE DE CICLO
 unsigned long tempo_atual = millis();
-unsigned long ciclo_padrao = 2000;
 unsigned long ciclo_padrao_anterior = ciclo_padrao;
 unsigned long inicio_ciclo = 0;
-unsigned long ciclo_minimo = 900;
-unsigned long ciclo_maximo = 2000;
 unsigned long soma_ciclos = 0;
 unsigned long conta_ciclos = 0;
 unsigned long fim_ciclo = 0;
@@ -105,24 +121,6 @@ unsigned long minimo = 0;
 unsigned long maximo = 0;
 unsigned long ultimo_ciclo = ciclo_padrao;
 
-// MANDÍBULA
-const unsigned int inicio_mandibula = 550;
-const unsigned int fim_mandibula = 1500;
-// FOTOCÉLULA
-const unsigned int inicio_fotocelula = 1250;
-const unsigned int fim_fotocelula = 1400;
-// FACA
-const unsigned int inicio_faca = 600;
-const unsigned int fim_faca = 800;
-// REFRIGERAÇÃO
-const unsigned int inicio_refrigeracao = 800;
-const unsigned long fim_refrigeracao = 1450;
-// DATADOR
-const unsigned int inicio_datador = 5;
-const unsigned int fim_datador = 400;
-// SOLDAS VERTICAL E HORIZONTAL
-const unsigned int inicio_soldas = 5;
-const unsigned int fim_soldas = 400;
 // TEMPOS MÉDIOS
 // MANDÍBULA
 unsigned long ti_mandibula = (unsigned long)inicio_mandibula; // NÃO ALTERE
@@ -223,7 +221,7 @@ void iniciaTrabalho() {
     // funcaoSimples(mandibula, NomeMandibula, inicio_mandibula, fim_mandibula);
     // funcaoSimples(faca, NomeFaca, inicio_faca, fim_faca);
     // funcaoSimples(refrigeracao, NomeRefrigeracao, inicio_refrigeracao, fim_refrigeracao);
-    funcaoSimples(datador, NomeDatador, inicio_datador, fim_datador);
+    funcaoSimples(datador, NomeDatador, ti_datador, tf_datador);
     // funcaoSimples(soldas, NomeSoldas, inicio_soldas, fim_soldas);
     // funcaoSimples(saida_teste, "Teste", 1500, 1600);
   }
@@ -304,23 +302,23 @@ void reiniciaCiclo(unsigned long tempo) {
 void cicloMedio() {
   if (conta_ciclos > 0) {
     ciclo_padrao_anterior = ciclo_padrao;
-    ciclo_padrao = ultimo_ciclo; //soma_ciclos / conta_ciclos;
+    ciclo_padrao = ultimo_ciclo; // soma_ciclos / conta_ciclos;
     // AJUSTE DINÂMICO DOS TEMPOS DAS FUNÇÕES
-    ajustaCiclo(&inicio_mandibula);
-    ajustaCiclo(&fim_mandibula);
-    ajustaCiclo(&inicio_faca);
-    ajustaCiclo(&fim_faca);
-    ajustaCiclo(&inicio_refrigeracao);
-    ajustaCiclo(&fim_refrigeracao);
-    ajustaCiclo(&inicio_datador);
-    ajustaCiclo(&fim_datador);
-    ajustaCiclo(&inicio_soldas);
-    ajustaCiclo(&fim_soldas);
+    ajustaCiclo(&ti_mandibula, inicio_mandibula);
+    ajustaCiclo(&tf_mandibula, fim_mandibula);
+    ajustaCiclo(&ti_faca, inicio_faca);
+    ajustaCiclo(&tf_faca, fim_faca);
+    ajustaCiclo(&ti_refrigeracao, inicio_refrigeracao);
+    ajustaCiclo(&tf_refrigeracao, fim_refrigeracao);
+    ajustaCiclo(&ti_datador, inicio_datador);
+    ajustaCiclo(&tf_datador, fim_datador);
+    ajustaCiclo(&ti_soldas, inicio_soldas);
+    ajustaCiclo(&tf_soldas, fim_soldas);
   }
 }
 
-void ajustaCiclo(unsigned long *variavel){
-  unsigned long tempo = (*variavel * ciclo_padrao) / ciclo_padrao_anterior;
+void ajustaCiclo(unsigned long *variavel, unsigned int original){
+  unsigned long tempo = ((unsigned long)original * ciclo_padrao) / ciclo_padrao_anterior;
   if (tempo <= 0){
     *variavel = 1;
   } else {
@@ -369,7 +367,7 @@ void ligaFuncao(byte saida, String nome) {
   if (desligado(saida)) {
     liga(saida);
     if (ligado(saida)){
-      escreveSerial(">> " + nome + " Ligado." + (String)inicio_datador);
+      escreveSerial(">> " + nome + " Ligado." + (String)ti_datador);
     } else {
       escreveSerial("Ocorreu um erro ao ligar " + nome);
     }
@@ -381,7 +379,7 @@ void desliga(byte saida) { digitalWrite(saida, DESLIGA); }
 void desligaFuncao(byte saida, String nome) {
   if (ligado(saida)) {
     desliga(saida);
-    escreveSerial("<< " + nome + " Desligado." + (String) fim_datador);
+    escreveSerial("<< " + nome + " Desligado." + (String)tf_datador);
   }
 }
 
