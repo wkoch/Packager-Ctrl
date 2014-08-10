@@ -27,10 +27,12 @@ const byte faca = 42;
 const byte refrigeracao = 44;
 const byte datador = 46;
 const byte soldas = 48;
-
+// SAÍDAS PWM
 const byte solda_vertical_PWM = 33;        // Saída da Solda Vertical
 const byte solda_horizontal_PWM = 35;      // Saída da Solda Horizontal
 const byte solda_datador_PWM = 37;         // Saída da Solda do Datador
+
+
 // REMOVER
 const byte saida_teste = 2;
 const byte entrada_teste = 4;
@@ -104,28 +106,42 @@ unsigned long maximo = 0;
 unsigned long ultimo_ciclo = ciclo_padrao;
 
 // MANDÍBULA
-unsigned long inicio_mandibula = 550;
-unsigned long fim_mandibula = 1500;
-
+const unsigned int inicio_mandibula = 550;
+const unsigned int fim_mandibula = 1500;
 // FOTOCÉLULA
-unsigned long inicio_fotocelula = 1250;
-unsigned long fim_fotocelula = 1400;
-
+const unsigned int inicio_fotocelula = 1250;
+const unsigned int fim_fotocelula = 1400;
 // FACA
-unsigned long inicio_faca = 600;
-unsigned long fim_faca = 800;
-
+const unsigned int inicio_faca = 600;
+const unsigned int fim_faca = 800;
 // REFRIGERAÇÃO
-unsigned long inicio_refrigeracao = 800;
-unsigned long fim_refrigeracao = 1450;
-
+const unsigned int inicio_refrigeracao = 800;
+const unsigned long fim_refrigeracao = 1450;
 // DATADOR
-unsigned long inicio_datador = 5;
-unsigned long fim_datador = 400;
-
+const unsigned int inicio_datador = 5;
+const unsigned int fim_datador = 400;
 // SOLDAS VERTICAL E HORIZONTAL
-unsigned long inicio_soldas = 5;
-unsigned long fim_soldas = 400;
+const unsigned int inicio_soldas = 5;
+const unsigned int fim_soldas = 400;
+// TEMPOS MÉDIOS
+// MANDÍBULA
+unsigned long ti_mandibula = (unsigned long)inicio_mandibula; // NÃO ALTERE
+unsigned long tf_mandibula = (unsigned long)fim_mandibula; // NÃO ALTERE
+// FOTOCÉLULA
+unsigned long ti_fotocelula = (unsigned long)inicio_fotocelula; // NÃO ALTERE
+unsigned long tf_fotocelula = (unsigned long)fim_fotocelula; // NÃO ALTERE
+// FACA
+unsigned long ti_faca = (unsigned long)inicio_faca; // NÃO ALTERE
+unsigned long tf_faca = (unsigned long)fim_faca; // NÃO ALTERE
+// REFRIGERAÇÃO
+unsigned long ti_refrigeracao = (unsigned long)inicio_refrigeracao; // NÃO ALTERE
+unsigned long tf_refrigeracao = (unsigned long)fim_refrigeracao; // NÃO ALTERE
+// DATADOR
+unsigned long ti_datador = (unsigned long)inicio_datador; // NÃO ALTERE
+unsigned long tf_datador = (unsigned long)fim_datador; // NÃO ALTERE
+// SOLDAS VERTICAL E HORIZONTAL
+unsigned long ti_soldas = (unsigned long)inicio_soldas; // NÃO ALTERE
+unsigned long tf_soldas = (unsigned long)fim_soldas; // NÃO ALTERE
 
 void setup() {
   Serial.begin(9600);
