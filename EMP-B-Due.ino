@@ -189,34 +189,30 @@ void setup() {
 
 void loop() {
   modoAlarme();
-
-  geraPWM(pot_solda_vertical, &tempo_PWM_vertical, solda_vertical_PWM);
-  geraPWM(pot_solda_horizontal, &tempo_PWM_horizontal, solda_horizontal_PWM);
-  geraPWM(pot_solda_datador, &tempo_PWM_datador, solda_datador_PWM);
-
-  if (!alarme_ativo) {
-    standBy();
-    modoTeste();
-  }
+  standBy();
+  modoTeste();
 }
 
 // MODOS DE TRABALHO
 
 void standBy() {
-  if (stand_by && !alarme_ativo) {
-    acionaGeral();    // Monitora botão Geral
-    acionaDosador();  // Monitora botão Dosador
-    acionaDatador();  // Monitora botão Datador
-    if (maquina_ligada) {
-      iniciaTrabalho(); // Inicia Ciclos de Produção
+  if (!alarme_ativo){
+    if (stand_by) {
+      acionaGeral();    // Monitora botão Geral
+      acionaDosador();  // Monitora botão Dosador
+      acionaDatador();  // Monitora botão Datador
+      geraPWM(pot_solda_vertical, &tempo_PWM_vertical, solda_vertical_PWM);
+      geraPWM(pot_solda_horizontal, &tempo_PWM_horizontal, solda_horizontal_PWM);
+      geraPWM(pot_solda_datador, &tempo_PWM_datador, solda_datador_PWM);
+      if (maquina_ligada) {
+        iniciaTrabalho(); // Inicia Ciclos de Produção
+      }
     } else {
-      resetCompleto();
+      escreveSerial("Preparando para iniciar trabalho.");
+      delay(3000);            // Espera 3 segundos após energização
+      stand_by = VERDADEIRO;  // Libera funcionamento
+      escreveSerial("Tudo pronto!");
     }
-  } else if (!alarme_ativo) {
-    escreveSerial("Preparando para iniciar trabalho.");
-    delay(3000);            // Espera 3 segundos após energização
-    stand_by = VERDADEIRO;  // Libera funcionamento
-    escreveSerial("Tudo pronto!");
   }
 }
 
@@ -487,8 +483,6 @@ void reiniciaSaidas() {
 }
 
 void resetCompleto() {
-  dosador_ligado = FALSO;
-  datador_ligado = FALSO;
   conta_ciclos = 0;
   maquina_ligada = FALSO;
   dosador_ligado = FALSO;
@@ -515,6 +509,9 @@ void modoTeste() {
   if (maquina_ligada) {
     ligaFuncao(geral, NomeGeral);
   } else {
+    if (ligado(geral)){
+      resetCompleto();
+    }
     desligaFuncao(geral, NomeGeral);
   }
   if (dosador_ligado) {
