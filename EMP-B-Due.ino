@@ -44,42 +44,46 @@ const byte pot_solda_datador = A2; // Potenciômetro da Solda Vertical
 const byte geral = 23; // Saída Geral
 const byte dosador = 25; // Saída do Dosador
 const byte led_datador = 27; // Saída do Datador
-const byte mandibula = 40;
-const byte faca = 42;
-const byte refrigeracao = 44;
-const byte datador = 46;
-const byte soldas = 48;
+const byte mandibula = 40; // Saída da Mandíbula
+const byte faca = 42; // Saída da Faca
+const byte refrigeracao = 44; // Saída da Refrigeração
+const byte datador = 46; // Saída do Datador
+const byte soldas = 48; // Saída das Soldas Vertical e Horizontal
 // SAÍDAS PWM
 const byte solda_vertical_PWM = 33; // Saída da Solda Vertical
 const byte solda_horizontal_PWM = 35; // Saída da Solda Horizontal
 const byte solda_datador_PWM = 37; // Saída da Solda do Datador
 // TEMPOS DE CICLO
-const unsigned long ciclo_padrao = 1500;
-const unsigned long ciclo_minimo = 900;
-const unsigned long ciclo_maximo = 2000;
+const unsigned long ciclo_PWM = 1000; // Tempo de Ciclo do PWM
+const unsigned long ciclo_padrao = 1500; // Ciclo padrão, base de cálculo dos ciclos
+const unsigned long ciclo_minimo = 900; // Limite mínimo aceito para um ciclo
+const unsigned long ciclo_maximo = 2000; // Limite máximo aceito para um ciclo
 // MANDÍBULA
-const unsigned long inicio_mandibula = 550;
-const unsigned long fim_mandibula = 1500;
+const unsigned long inicio_mandibula = 550; // Tempo de entrada da função Mandíbula
+const unsigned long fim_mandibula = 1500; // Tempo de saída da função Mandíbula
 // FOTOCÉLULA
-const unsigned long inicio_fotocelula = 1250;
-const unsigned long fim_fotocelula = 1400;
+const unsigned long inicio_fotocelula = 1250; // Tempo de entrada da liberação da Fotocélula
+const unsigned long fim_fotocelula = 1400; // Tempo de saída da liberação da Fotocélula
 // FACA
-const unsigned long inicio_faca = 600;
-const unsigned long fim_faca = 800;
+const unsigned long inicio_faca = 600; // Tempo de entrada da função Faca
+const unsigned long fim_faca = 800; // Tempo de saída da função Faca
 // REFRIGERAÇÃO
-const unsigned long inicio_refrigeracao = 800;
-const unsigned long fim_refrigeracao = 1450;
+const unsigned long inicio_refrigeracao = 800; // Tempo de entrada da função Refrigeração
+const unsigned long fim_refrigeracao = 1450; // Tempo de saída da função Refrigeração
 // DATADOR
-const unsigned long inicio_datador = 0;
-const unsigned long fim_datador = 400;
+const unsigned long inicio_datador = 0; // Tempo de entrada da função Datador
+const unsigned long fim_datador = 400; // Tempo de saída da função Datador
 // SOLDAS VERTICAL E HORIZONTAL
-const unsigned long inicio_soldas = 0;
-const unsigned long fim_soldas = 400;
+const unsigned long inicio_soldas = 0; // Tempo de entrada da função Soldas Horizontal e Vertical
+const unsigned long fim_soldas = 400; // Tempo de saída da função Soldas Horizontal e Vertical
 
 // REMOVER >>
 const byte saida_teste = 3;
 const byte entrada_teste = 4;
 // << REMOVER
+
+// FIM DAS CONFIGURAÇÕES
+
 
 // VARIÁVEIS
 // BOTÕES UM-CLIQUE
@@ -95,10 +99,9 @@ int estbta_datador = BAIXO;     // Estado anterior do Botão Dosador
 unsigned long atr_datador = 0;  // Atraso do Botão Dosador
 
 // PWM DAS SOLDAS
-const unsigned long ciclo_PWM = 1000;
-unsigned long tempo_PWM_vertical = 0;    // Tempo do PWM da solda vertical
-unsigned long tempo_PWM_horizontal = 0;  // Tempo do PWM da solda horizontal
-unsigned long tempo_PWM_datador = 0;     // Tempo do PWM da solda do Datador
+unsigned long tempo_PWM_vertical = 0;
+unsigned long tempo_PWM_horizontal = 0;
+unsigned long tempo_PWM_datador = 0;
 
 // MODOS DE TRABALHO
 boolean stand_by = FALSO;
@@ -126,23 +129,23 @@ unsigned long ultimo_ciclo = ciclo_padrao;
 
 // TEMPOS MÉDIOS
 // MANDÍBULA
-unsigned long ti_mandibula = inicio_mandibula; // NÃO ALTERE
-unsigned long tf_mandibula = fim_mandibula; // NÃO ALTERE
+unsigned long ti_mandibula = inicio_mandibula;
+unsigned long tf_mandibula = fim_mandibula;
 // FOTOCÉLULA
-unsigned long ti_fotocelula = inicio_fotocelula; // NÃO ALTERE
-unsigned long tf_fotocelula = fim_fotocelula; // NÃO ALTERE
+unsigned long ti_fotocelula = inicio_fotocelula;
+unsigned long tf_fotocelula = fim_fotocelula;
 // FACA
-unsigned long ti_faca = inicio_faca; // NÃO ALTERE
-unsigned long tf_faca = fim_faca; // NÃO ALTERE
+unsigned long ti_faca = inicio_faca;
+unsigned long tf_faca = fim_faca;
 // REFRIGERAÇÃO
-unsigned long ti_refrigeracao = inicio_refrigeracao; // NÃO ALTERE
-unsigned long tf_refrigeracao = fim_refrigeracao; // NÃO ALTERE
+unsigned long ti_refrigeracao = inicio_refrigeracao;
+unsigned long tf_refrigeracao = fim_refrigeracao;
 // DATADOR
-unsigned long ti_datador = inicio_datador; // NÃO ALTERE
-unsigned long tf_datador = fim_datador; // NÃO ALTERE
+unsigned long ti_datador = inicio_datador;
+unsigned long tf_datador = fim_datador;
 // SOLDAS VERTICAL E HORIZONTAL
-unsigned long ti_soldas = inicio_soldas; // NÃO ALTERE
-unsigned long tf_soldas = fim_soldas; // NÃO ALTERE
+unsigned long ti_soldas = inicio_soldas;
+unsigned long tf_soldas = fim_soldas;
 
 void setup() {
   Serial.begin(9600);
@@ -161,17 +164,12 @@ void setup() {
   pinMode(solda_datador_PWM, SAIDA);
   // SENSORES
   pinMode(sensor_reset, BOTAO); // Mudar para Sensor após os testes.
-  pinMode(sensor_mandibula, BOTAO);
-  pinMode(fotocelula, BOTAO);
-  pinMode(sensor_porta, BOTAO);
-  pinMode(sensor_painel, BOTAO);
-  pinMode(sensor_maquina, BOTAO);
-
-  // REMOVER
-  pinMode(saida_teste, SAIDA);
-  pinMode(entrada_teste, SENSOR);
-
-
+  pinMode(sensor_mandibula, BOTAO); // Mudar para Sensor após os testes.
+  pinMode(fotocelula, BOTAO); // Mudar para Sensor após os testes.
+  pinMode(sensor_porta, BOTAO); // Mudar para Sensor após os testes.
+  pinMode(sensor_painel, BOTAO); // Mudar para Sensor após os testes.
+  pinMode(sensor_maquina, BOTAO); // Mudar para Sensor após os testes.
+  // SAÍDAS
   pinMode(geral, SAIDA);
   pinMode(dosador, SAIDA);
   pinMode(led_datador, SAIDA);
@@ -179,9 +177,14 @@ void setup() {
   pinMode(refrigeracao, SAIDA);
   pinMode(datador, SAIDA);
   pinMode(soldas, SAIDA);
-
   // ESTADO INICIAL DAS SAÍDAS
   resetCompleto();
+
+
+  // REMOVER >>
+  pinMode(saida_teste, SAIDA);
+  pinMode(entrada_teste, SENSOR);
+  // << REMOVER
 }
 
 void loop() {
@@ -205,7 +208,7 @@ void standBy() {
     acionaDosador();  // Monitora botão Dosador
     acionaDatador();  // Monitora botão Datador
     if (maquina_ligada) {
-      iniciaTrabalho();
+      iniciaTrabalho(); // Inicia Ciclos de Produção
     } else {
       resetCompleto();
     }
@@ -326,7 +329,7 @@ void cicloMedio() {
 
 void ajustaCiclo(unsigned long *variavel, unsigned long original){
   unsigned long tempo = (original * ciclo_padrao_anterior) / ciclo_padrao;
-  if (tempo <= 0){
+  if (tempo <= 0){ // Evita um problema com acionamentos em tempo 0
     *variavel = 1;
   } else {
     *variavel = tempo;
