@@ -227,7 +227,7 @@ void iniciaTrabalho() {
     funcaoSimples(mandibula, NomeMandibula, ti_mandibula, tf_mandibula);
     funcaoSegura(faca, NomeFaca, ti_faca, tf_faca, sensor_mandibula);
     funcaoSimples(refrigeracao, NomeRefrigeracao, ti_refrigeracao, tf_refrigeracao);
-    funcaoSimples(datador, NomeDatador, ti_datador, tf_datador);
+    funcaoComLiberacao(datador, NomeDatador, ti_datador, tf_datador, datador_ligado);
     funcaoSimples(soldas, NomeSoldas, ti_soldas, tf_soldas);
   }
   funcaoReset();
@@ -371,6 +371,18 @@ void funcaoSegura(const byte saida, String nome, unsigned long inicio, unsigned 
   }
 }
 
+void funcaoComLiberacao(const byte saida, String nome, unsigned long inicio, unsigned long fim, byte liberacao){
+  inicio += inicio_ciclo;
+  fim += inicio_ciclo;
+  if (desligado(saida) && liberacao){
+    if (tempo_atual >= inicio && tempo_atual < fim) {
+      ligaFuncao(saida, nome);
+    }
+  } else if (tempo_atual >= fim) {
+    desligaFuncao(saida, nome);
+  }
+}
+
 void liberaFotocelula() {
   unsigned long inicio = ti_fotocelula + inicio_ciclo;
   unsigned long fim = tf_fotocelula + inicio_ciclo;
@@ -402,7 +414,7 @@ void ligaFuncao(byte saida, String nome) {
   if (desligado(saida)) {
     liga(saida);
     if (ligado(saida)){
-      escreveSerial(">> " + nome + " Ligado." + (String)ti_mandibula);
+      escreveSerial(">> " + nome + " Ligado.");
     } else {
       escreveSerial("Ocorreu um erro ao ligar " + nome);
     }
@@ -414,7 +426,7 @@ void desliga(byte saida) { digitalWrite(saida, DESLIGA); }
 void desligaFuncao(byte saida, String nome) {
   if (ligado(saida)) {
     desliga(saida);
-    escreveSerial("<< " + nome + " Desligado." + (String)tf_mandibula);
+    escreveSerial("<< " + nome + " Desligado.");
   }
 }
 
