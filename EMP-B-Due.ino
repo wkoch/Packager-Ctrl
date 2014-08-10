@@ -52,27 +52,27 @@ const byte solda_vertical_PWM = 33;        // Saída da Solda Vertical
 const byte solda_horizontal_PWM = 35;      // Saída da Solda Horizontal
 const byte solda_datador_PWM = 37;         // Saída da Solda do Datador
 // TEMPOS DE CICLO
-unsigned long ciclo_padrao = 2000;
+const unsigned long ciclo_padrao = 2000;
 const unsigned long ciclo_minimo = 900;
 const unsigned long ciclo_maximo = 2000;
 // MANDÍBULA
-const unsigned int inicio_mandibula = 550;
-const unsigned int fim_mandibula = 1500;
+const unsigned long inicio_mandibula = 550;
+const unsigned long fim_mandibula = 1500;
 // FOTOCÉLULA
-const unsigned int inicio_fotocelula = 1250;
-const unsigned int fim_fotocelula = 1400;
+const unsigned long inicio_fotocelula = 1250;
+const unsigned long fim_fotocelula = 1400;
 // FACA
-const unsigned int inicio_faca = 600;
-const unsigned int fim_faca = 800;
+const unsigned long inicio_faca = 600;
+const unsigned long fim_faca = 800;
 // REFRIGERAÇÃO
-const unsigned int inicio_refrigeracao = 800;
+const unsigned long inicio_refrigeracao = 800;
 const unsigned long fim_refrigeracao = 1450;
 // DATADOR
-const unsigned int inicio_datador = 5;
-const unsigned int fim_datador = 400;
+const unsigned long inicio_datador = 5;
+const unsigned long fim_datador = 400;
 // SOLDAS VERTICAL E HORIZONTAL
-const unsigned int inicio_soldas = 5;
-const unsigned int fim_soldas = 400;
+const unsigned long inicio_soldas = 5;
+const unsigned long fim_soldas = 400;
 
 // REMOVER >>
 const byte saida_teste = 2;
@@ -80,7 +80,7 @@ const byte entrada_teste = 4;
 // << REMOVER
 
 // VARIÁVEIS
-// BOTOÕES UM-CLIQUE
+// BOTÕES UM-CLIQUE
 unsigned long atraso = 50;
 int estbt_geral;                // Estado do Botão Geral
 int estbta_geral = BAIXO;       // Estado anterior do Botão Geral
@@ -112,6 +112,7 @@ boolean resetado = FALSO;
 // TEMPOS DE CICLO
 // CONTROLE DE CICLO
 unsigned long tempo_atual = millis();
+unsigned long novo_ciclo_padrao = ciclo_padrao;
 unsigned long ciclo_padrao_anterior = ciclo_padrao;
 unsigned long inicio_ciclo = 0;
 unsigned long soma_ciclos = 0;
@@ -123,23 +124,23 @@ unsigned long ultimo_ciclo = ciclo_padrao;
 
 // TEMPOS MÉDIOS
 // MANDÍBULA
-unsigned long ti_mandibula = (unsigned long)inicio_mandibula; // NÃO ALTERE
-unsigned long tf_mandibula = (unsigned long)fim_mandibula; // NÃO ALTERE
+unsigned long ti_mandibula = inicio_mandibula; // NÃO ALTERE
+unsigned long tf_mandibula = fim_mandibula; // NÃO ALTERE
 // FOTOCÉLULA
-unsigned long ti_fotocelula = (unsigned long)inicio_fotocelula; // NÃO ALTERE
-unsigned long tf_fotocelula = (unsigned long)fim_fotocelula; // NÃO ALTERE
+unsigned long ti_fotocelula = inicio_fotocelula; // NÃO ALTERE
+unsigned long tf_fotocelula = fim_fotocelula; // NÃO ALTERE
 // FACA
-unsigned long ti_faca = (unsigned long)inicio_faca; // NÃO ALTERE
-unsigned long tf_faca = (unsigned long)fim_faca; // NÃO ALTERE
+unsigned long ti_faca = inicio_faca; // NÃO ALTERE
+unsigned long tf_faca = fim_faca; // NÃO ALTERE
 // REFRIGERAÇÃO
-unsigned long ti_refrigeracao = (unsigned long)inicio_refrigeracao; // NÃO ALTERE
-unsigned long tf_refrigeracao = (unsigned long)fim_refrigeracao; // NÃO ALTERE
+unsigned long ti_refrigeracao = inicio_refrigeracao; // NÃO ALTERE
+unsigned long tf_refrigeracao = fim_refrigeracao; // NÃO ALTERE
 // DATADOR
-unsigned long ti_datador = (unsigned long)inicio_datador; // NÃO ALTERE
-unsigned long tf_datador = (unsigned long)fim_datador; // NÃO ALTERE
+unsigned long ti_datador = inicio_datador; // NÃO ALTERE
+unsigned long tf_datador = fim_datador; // NÃO ALTERE
 // SOLDAS VERTICAL E HORIZONTAL
-unsigned long ti_soldas = (unsigned long)inicio_soldas; // NÃO ALTERE
-unsigned long tf_soldas = (unsigned long)fim_soldas; // NÃO ALTERE
+unsigned long ti_soldas = inicio_soldas; // NÃO ALTERE
+unsigned long tf_soldas = fim_soldas; // NÃO ALTERE
 
 void setup() {
   Serial.begin(9600);
@@ -270,7 +271,7 @@ void acionaDatador() {
 void funcaoReset() {
   tempo_atual = millis();
   if (resetado){
-    fim_ciclo = inicio_ciclo + ciclo_padrao;
+    fim_ciclo = inicio_ciclo + novo_ciclo_padrao;
     minimo = inicio_ciclo + ciclo_minimo;
     maximo = inicio_ciclo + ciclo_maximo;
     resetado = FALSO;
@@ -285,7 +286,7 @@ void funcaoReset() {
       reiniciaCiclo(tempo_atual);
       escreveSerial("\t" + (String)conta_ciclos + " " +
                     (String)ultimo_ciclo + " " +
-                    (String)ciclo_padrao + " " + (String)tempo_atual + " " +
+                    (String)novo_ciclo_padrao + " " + (String)tempo_atual + " " +
                     (String)millis());
     }
   }
@@ -301,8 +302,8 @@ void reiniciaCiclo(unsigned long tempo) {
 
 void cicloMedio() {
   if (conta_ciclos > 0) {
-    ciclo_padrao_anterior = ciclo_padrao;
-    ciclo_padrao = ultimo_ciclo; // soma_ciclos / conta_ciclos;
+    ciclo_padrao_anterior = novo_ciclo_padrao;
+    novo_ciclo_padrao = ultimo_ciclo; // soma_ciclos / conta_ciclos;
     // AJUSTE DINÂMICO DOS TEMPOS DAS FUNÇÕES
     ajustaCiclo(&ti_mandibula, inicio_mandibula);
     ajustaCiclo(&tf_mandibula, fim_mandibula);
@@ -317,8 +318,8 @@ void cicloMedio() {
   }
 }
 
-void ajustaCiclo(unsigned long *variavel, unsigned int original){
-  unsigned long tempo = ((unsigned long)original * ciclo_padrao) / ciclo_padrao_anterior;
+void ajustaCiclo(unsigned long *variavel, unsigned long original){
+  unsigned long tempo = (original * ciclo_padrao_anterior) / ciclo_padrao;
   if (tempo <= 0){
     *variavel = 1;
   } else {
