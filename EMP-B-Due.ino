@@ -248,7 +248,7 @@ void bloqueioPorAlarme(String texto) {
   alarme_ativo = VERDADEIRO;
   stand_by = FALSO;
   escreveSerial("\n<< Alarme! >>\n");
-  reiniciaSaidas();
+  resetCompleto();
   escreveSerial(texto + " detectou uma falha!");
 }
 
@@ -467,7 +467,6 @@ void resetCompleto() {
   maquina_ligada = FALSO;
   dosador_ligado = FALSO;
   datador_ligado = FALSO;
-  alarme_ativo = FALSO;
   fotocelula_liberada = FALSO;
   fotocelula_cortou = FALSO;
   produzindo = FALSO;
