@@ -364,7 +364,7 @@ void funcaoSegura(const byte saida, String nome, unsigned long inicio, unsigned 
   if (ativo(seguranca)){
     funcaoSimples(saida, nome, inicio, fim);
   } else {
-    alarme_ativo = VERDADEIRO;
+    bloqueioPorAlarme("Sensor da Mandíbula");
   }
 }
 
