@@ -52,7 +52,7 @@ const byte solda_vertical_PWM = 33;        // Saída da Solda Vertical
 const byte solda_horizontal_PWM = 35;      // Saída da Solda Horizontal
 const byte solda_datador_PWM = 37;         // Saída da Solda do Datador
 // TEMPOS DE CICLO
-const unsigned long ciclo_padrao = 2000;
+const unsigned long ciclo_padrao = 1500;
 const unsigned long ciclo_minimo = 900;
 const unsigned long ciclo_maximo = 2000;
 // MANDÍBULA
@@ -68,10 +68,10 @@ const unsigned long fim_faca = 800;
 const unsigned long inicio_refrigeracao = 800;
 const unsigned long fim_refrigeracao = 1450;
 // DATADOR
-const unsigned long inicio_datador = 5;
+const unsigned long inicio_datador = 0;
 const unsigned long fim_datador = 400;
 // SOLDAS VERTICAL E HORIZONTAL
-const unsigned long inicio_soldas = 5;
+const unsigned long inicio_soldas = 0;
 const unsigned long fim_soldas = 400;
 
 // REMOVER >>
@@ -219,12 +219,11 @@ void iniciaTrabalho() {
     reiniciaCiclo(millis());
   }
   if (conta_ciclos >= 3) {
-    // funcaoSimples(mandibula, NomeMandibula, inicio_mandibula, fim_mandibula);
-    // funcaoSimples(faca, NomeFaca, inicio_faca, fim_faca);
-    // funcaoSimples(refrigeracao, NomeRefrigeracao, inicio_refrigeracao, fim_refrigeracao);
+    funcaoSimples(mandibula, NomeMandibula, ti_mandibula, tf_mandibula);
+    funcaoSimples(faca, NomeFaca, ti_faca, tf_faca);
+    funcaoSimples(refrigeracao, NomeRefrigeracao, ti_refrigeracao, tf_refrigeracao);
     funcaoSimples(datador, NomeDatador, ti_datador, tf_datador);
-    // funcaoSimples(soldas, NomeSoldas, inicio_soldas, fim_soldas);
-    // funcaoSimples(saida_teste, "Teste", 1500, 1600);
+    funcaoSimples(soldas, NomeSoldas, ti_soldas, tf_soldas);
   }
   funcaoReset();
 }
@@ -274,8 +273,8 @@ void funcaoReset() {
     fim_ciclo = inicio_ciclo + novo_ciclo_padrao;
     minimo = inicio_ciclo + ciclo_minimo;
     maximo = inicio_ciclo + ciclo_maximo;
-    resetado = FALSO;
     reiniciaSaidas();
+    resetado = FALSO;
   }
 
   if (tempo_atual >= minimo) {
@@ -284,6 +283,7 @@ void funcaoReset() {
       ultimo_ciclo = tempo_atual - inicio_ciclo;
       soma_ciclos += (tempo_atual - inicio_ciclo);
       reiniciaCiclo(tempo_atual);
+      reiniciaSaidas();
       escreveSerial("\t" + (String)conta_ciclos + " " +
                     (String)ultimo_ciclo + " " +
                     (String)novo_ciclo_padrao + " " + (String)tempo_atual + " " +
@@ -368,7 +368,7 @@ void ligaFuncao(byte saida, String nome) {
   if (desligado(saida)) {
     liga(saida);
     if (ligado(saida)){
-      escreveSerial(">> " + nome + " Ligado." + (String)ti_datador);
+      escreveSerial(">> " + nome + " Ligado." + (String)ti_mandibula);
     } else {
       escreveSerial("Ocorreu um erro ao ligar " + nome);
     }
@@ -380,7 +380,7 @@ void desliga(byte saida) { digitalWrite(saida, DESLIGA); }
 void desligaFuncao(byte saida, String nome) {
   if (ligado(saida)) {
     desliga(saida);
-    escreveSerial("<< " + nome + " Desligado." + (String)tf_datador);
+    escreveSerial("<< " + nome + " Desligado." + (String)tf_mandibula);
   }
 }
 
