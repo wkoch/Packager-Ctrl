@@ -35,9 +35,10 @@ const byte sensor_reset = 28;    // Entrada do Sensor de Reset de Ciclo
 const byte sensor_porta = 32;    // Sensor de Segurança da Porta Frontal
 const byte sensor_painel = 34;   // Sensor de Segurança da Porta do Painel
 const byte sensor_maquina = 36;  // Sensor de Segurança da Porta da Máquina
-const byte pot_solda_vertical = A0;    // Potenciômetro da Solda Vertical
-const byte pot_solda_horizontal = A1;  // Potenciômetro da Solda Vertical
-const byte pot_solda_datador = A2;     // Potenciômetro da Solda Vertical
+const byte sensor_mandibula = 2; // Sensor de Segurança de Fechamento da Mandíbula
+const byte pot_solda_vertical = A0; // Potenciômetro da Solda Vertical
+const byte pot_solda_horizontal = A1; // Potenciômetro da Solda Vertical
+const byte pot_solda_datador = A2; // Potenciômetro da Solda Vertical
 // SAÍDAS
 const byte geral = 23; // Saída Geral
 const byte dosador = 25; // Saída do Dosador
@@ -48,9 +49,9 @@ const byte refrigeracao = 44;
 const byte datador = 46;
 const byte soldas = 48;
 // SAÍDAS PWM
-const byte solda_vertical_PWM = 33;        // Saída da Solda Vertical
-const byte solda_horizontal_PWM = 35;      // Saída da Solda Horizontal
-const byte solda_datador_PWM = 37;         // Saída da Solda do Datador
+const byte solda_vertical_PWM = 33; // Saída da Solda Vertical
+const byte solda_horizontal_PWM = 35; // Saída da Solda Horizontal
+const byte solda_datador_PWM = 37; // Saída da Solda do Datador
 // TEMPOS DE CICLO
 const unsigned long ciclo_padrao = 1500;
 const unsigned long ciclo_minimo = 900;
@@ -75,7 +76,7 @@ const unsigned long inicio_soldas = 0;
 const unsigned long fim_soldas = 400;
 
 // REMOVER >>
-const byte saida_teste = 2;
+const byte saida_teste = 3;
 const byte entrada_teste = 4;
 // << REMOVER
 
@@ -148,7 +149,6 @@ void setup() {
   pinMode(bt_geral, BOTAO);
   pinMode(bt_dosador, BOTAO);
   pinMode(bt_datador, BOTAO);
-  pinMode(sensor_reset, BOTAO);  // Mudar para Sensor após os testes.
   // POTENCIÔMETROS DAS SOLDAS
   pinMode(pot_solda_vertical, SENSOR);
   pinMode(pot_solda_horizontal, SENSOR);
@@ -159,6 +159,8 @@ void setup() {
   pinMode(solda_horizontal_PWM, SAIDA);
   pinMode(solda_datador_PWM, SAIDA);
   // SENSORES
+  pinMode(sensor_reset, BOTAO); // Mudar para Sensor após os testes.
+  pinMode(sensor_mandibula, BOTAO);
   pinMode(sensor_porta, BOTAO);
   pinMode(sensor_painel, BOTAO);
   pinMode(sensor_maquina, BOTAO);
@@ -203,7 +205,7 @@ void standBy() {
     if (maquina_ligada) {
       iniciaTrabalho();
     } else {
-      reiniciaSaidas();
+      resetCompleto();
     }
   } else if (!alarme_ativo) {
     escreveSerial("Preparando para iniciar trabalho.");
@@ -220,7 +222,7 @@ void iniciaTrabalho() {
   }
   if (conta_ciclos >= 3) {
     funcaoSimples(mandibula, NomeMandibula, ti_mandibula, tf_mandibula);
-    funcaoSimples(faca, NomeFaca, ti_faca, tf_faca);
+    funcaoSegura(faca, NomeFaca, ti_faca, tf_faca, sensor_mandibula);
     funcaoSimples(refrigeracao, NomeRefrigeracao, ti_refrigeracao, tf_refrigeracao);
     funcaoSimples(datador, NomeDatador, ti_datador, tf_datador);
     funcaoSimples(soldas, NomeSoldas, ti_soldas, tf_soldas);
@@ -358,6 +360,14 @@ void funcaoSimples(const byte saida, String nome, unsigned long inicio, unsigned
   }
 }
 
+void funcaoSegura(const byte saida, String nome, unsigned long inicio, unsigned long fim, byte seguranca){
+  if (ativo(seguranca)){
+    funcaoSimples(saida, nome, inicio, fim);
+  } else {
+    alarme_ativo = VERDADEIRO;
+  }
+}
+
 // FERRAMENTAS AUXILIARES
 
 byte leEntrada(byte pino) { return digitalRead(pino); }
@@ -454,6 +464,14 @@ void resetCompleto() {
   dosador_ligado = FALSO;
   datador_ligado = FALSO;
   conta_ciclos = 0;
+  maquina_ligada = FALSO;
+  dosador_ligado = FALSO;
+  datador_ligado = FALSO;
+  alarme_ativo = FALSO;
+  fotocelula_liberada = FALSO;
+  fotocelula_cortou = FALSO;
+  produzindo = FALSO;
+  resetado = FALSO;
   desliga(geral);
   desliga(dosador);
   desliga(led_datador);
