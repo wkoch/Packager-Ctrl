@@ -36,6 +36,7 @@ const byte sensor_porta = 32;    // Sensor de Segurança da Porta Frontal
 const byte sensor_painel = 34;   // Sensor de Segurança da Porta do Painel
 const byte sensor_maquina = 36;  // Sensor de Segurança da Porta da Máquina
 const byte sensor_mandibula = 2; // Sensor de Segurança de Fechamento da Mandíbula
+const byte fotocelula = 6; // Sensor da Fotocélula de Corte
 const byte pot_solda_vertical = A0; // Potenciômetro da Solda Vertical
 const byte pot_solda_horizontal = A1; // Potenciômetro da Solda Vertical
 const byte pot_solda_datador = A2; // Potenciômetro da Solda Vertical
@@ -161,6 +162,7 @@ void setup() {
   // SENSORES
   pinMode(sensor_reset, BOTAO); // Mudar para Sensor após os testes.
   pinMode(sensor_mandibula, BOTAO);
+  pinMode(fotocelula, BOTAO);
   pinMode(sensor_porta, BOTAO);
   pinMode(sensor_painel, BOTAO);
   pinMode(sensor_maquina, BOTAO);
@@ -221,6 +223,8 @@ void iniciaTrabalho() {
     reiniciaCiclo(millis());
   }
   if (conta_ciclos >= 3) {
+    liberaFotocelula();
+    leFotocelula();
     funcaoSimples(mandibula, NomeMandibula, ti_mandibula, tf_mandibula);
     funcaoSegura(faca, NomeFaca, ti_faca, tf_faca, sensor_mandibula);
     funcaoSimples(refrigeracao, NomeRefrigeracao, ti_refrigeracao, tf_refrigeracao);
@@ -351,7 +355,7 @@ void geraPWM(byte pot, unsigned long *inicio, byte saida) {
 void funcaoSimples(const byte saida, String nome, unsigned long inicio, unsigned long fim) {
   inicio += inicio_ciclo;
   fim += inicio_ciclo;
-  if (desligado(saida)){
+  if (desligado(saida) && !fotocelula_cortou){
     if (tempo_atual >= inicio && tempo_atual < fim) {
       ligaFuncao(saida, nome);
     }
@@ -368,9 +372,30 @@ void funcaoSegura(const byte saida, String nome, unsigned long inicio, unsigned 
   }
 }
 
+void liberaFotocelula() {
+  unsigned long inicio = ti_fotocelula + inicio_ciclo;
+  unsigned long fim = tf_fotocelula + inicio_ciclo;
+  if (!fotocelula_cortou){
+    if (tempo_atual >= inicio && tempo_atual < fim) {
+      fotocelula_liberada = VERDADEIRO;
+    }
+  } else if (tempo_atual >= fim) {
+    fotocelula_liberada = FALSO;
+  }
+}
+
+void leFotocelula(){
+  if (fotocelula_liberada && !fotocelula_cortou){
+    if (ativo(fotocelula)){
+      fotocelula_cortou = VERDADEIRO;
+      reiniciaSaidas();
+    }
+  }
+}
+
 // FERRAMENTAS AUXILIARES
 
-byte leEntrada(byte pino) { return digitalRead(pino); }
+byte lePino(byte pino) { return digitalRead(pino); }
 
 void liga(byte saida) { digitalWrite(saida, LIGA); }
 
@@ -395,7 +420,7 @@ void desligaFuncao(byte saida, String nome) {
 }
 
 boolean ligado(byte saida) {
-  if (digitalRead(saida) == LIGA) {
+  if (lePino(saida) == LIGA) {
     return VERDADEIRO;
   } else {
     return FALSO;
@@ -403,7 +428,7 @@ boolean ligado(byte saida) {
 }
 
 boolean desligado(byte saida) {
-  if (digitalRead(saida) == DESLIGA) {
+  if (lePino(saida) == DESLIGA) {
     return VERDADEIRO;
   } else {
     return FALSO;
@@ -411,7 +436,7 @@ boolean desligado(byte saida) {
 }
 
 boolean ativo(byte entrada) {
-  if (digitalRead(entrada) == ALTO) {
+  if (lePino(entrada) == ALTO) {
     return VERDADEIRO;
   } else {
     return FALSO;
@@ -419,7 +444,7 @@ boolean ativo(byte entrada) {
 }
 
 boolean inativo(byte entrada) {
-  if (digitalRead(entrada) == BAIXO) {
+  if (lePino(entrada) == BAIXO) {
     return VERDADEIRO;
   } else {
     return FALSO;
@@ -428,7 +453,7 @@ boolean inativo(byte entrada) {
 
 void btUmClique(byte botao, int *estado, int *est_ant, unsigned long *atr_ant,
                 boolean *funcao) {
-  byte estado_atual = leEntrada(botao);
+  byte estado_atual = lePino(botao);
   if (estado_atual != *est_ant) {
     *atr_ant = millis();
   }
@@ -451,8 +476,6 @@ void escreveSerial(String texto) {
 }
 
 void reiniciaSaidas() {
-  desligaFuncao(dosador, NomeDosador);
-  desligaFuncao(led_datador, NomeDatador);
   desligaFuncao(mandibula, NomeMandibula);
   desligaFuncao(faca, NomeFaca);
   desligaFuncao(refrigeracao, NomeRefrigeracao);
