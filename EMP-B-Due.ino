@@ -23,9 +23,7 @@
 #define NomeMandibula "Mandibula" // Ciclo da Mandíbula
 #define NomeFaca "Faca" // Ciclo da Faca
 #define NomeRefrigeracao "Refrigeracao" // Ciclo da Refrigeração
-#define NomeSoldas "Soldas" // Ciclo das Soldas Vertical e Horizontal
-#define NomeSoldaVertical "Solda Vertical"
-#define NomeSoldaHorizontal "Solda Horizontal"
+#define NomeVertical "Solda Vertical" // Ciclo da Solda Vertical
 #define NomeSoldaDatador "Solda Datador"
 // ENTRADAS
 const byte bt_geral = 22;        // Entrada do botão de Liga/Desliga Geral
@@ -48,7 +46,7 @@ const byte mandibula = 40; // Saída da Mandíbula
 const byte faca = 42; // Saída da Faca
 const byte refrigeracao = 44; // Saída da Refrigeração
 const byte datador = 46; // Saída do Datador
-const byte soldas = 48; // Saída das Soldas Vertical e Horizontal
+const byte vertical = 48; // Saída da Solda Vertical
 // SAÍDAS PWM
 const byte solda_vertical_PWM = 33; // Saída da Solda Vertical
 const byte solda_horizontal_PWM = 35; // Saída da Solda Horizontal
@@ -72,10 +70,10 @@ const unsigned long inicio_refrigeracao = 800; // Tempo de entrada da função R
 const unsigned long fim_refrigeracao = 1450; // Tempo de saída da função Refrigeração
 // DATADOR
 const unsigned long inicio_datador = 0; // Tempo de entrada da função Datador
-const unsigned long fim_datador = 700; // Tempo de saída da função Datador
+const unsigned long fim_datador = 400; // Tempo de saída da função Datador
 // SOLDAS VERTICAL E HORIZONTAL
-const unsigned long inicio_soldas = 0; // Tempo de entrada da função Soldas Horizontal e Vertical
-const unsigned long fim_soldas = 400; // Tempo de saída da função Soldas Horizontal e Vertical
+const unsigned long inicio_vertical = 0; // Tempo de entrada da função Solda Vertical
+const unsigned long fim_vertical = 400; // Tempo de saída da função Solda Vertical
 
 // REMOVER >>
 const byte saida_teste = 3;
@@ -143,9 +141,9 @@ unsigned long tf_refrigeracao = fim_refrigeracao;
 // DATADOR
 unsigned long ti_datador = inicio_datador;
 unsigned long tf_datador = fim_datador;
-// SOLDAS VERTICAL E HORIZONTAL
-unsigned long ti_soldas = inicio_soldas;
-unsigned long tf_soldas = fim_soldas;
+// SOLDA VERTICAL
+unsigned long ti_vertical = inicio_vertical;
+unsigned long tf_vertical = fim_vertical;
 
 void setup() {
   Serial.begin(9600);
@@ -176,7 +174,7 @@ void setup() {
   pinMode(faca, SAIDA);
   pinMode(refrigeracao, SAIDA);
   pinMode(datador, SAIDA);
-  pinMode(soldas, SAIDA);
+  pinMode(vertical, SAIDA);
   // ESTADO INICIAL DAS SAÍDAS
   resetCompleto();
 
@@ -228,7 +226,7 @@ void iniciaTrabalho() {
     funcaoSegura(faca, NomeFaca, ti_faca, tf_faca, sensor_mandibula);
     funcaoBloqueante(refrigeracao, NomeRefrigeracao, ti_refrigeracao, tf_refrigeracao);
     funcaoComLiberacao(datador, NomeDatador, ti_datador, tf_datador, datador_ligado);
-    funcaoSimples(soldas, NomeSoldas, ti_soldas, tf_soldas);
+    funcaoSimples(vertical, NomeVertical, ti_vertical, tf_vertical);
   }
   funcaoReset();
 }
@@ -318,8 +316,8 @@ void cicloMedio() {
     ajustaCiclo(&tf_refrigeracao, fim_refrigeracao);
     ajustaCiclo(&ti_datador, inicio_datador);
     ajustaCiclo(&tf_datador, fim_datador);
-    ajustaCiclo(&ti_soldas, inicio_soldas);
-    ajustaCiclo(&tf_soldas, fim_soldas);
+    ajustaCiclo(&ti_vertical, inicio_vertical);
+    ajustaCiclo(&tf_vertical, fim_vertical);
   }
 }
 
@@ -510,7 +508,7 @@ void reiniciaSaidas() {
   desligaFuncao(faca, NomeFaca);
   desligaFuncao(refrigeracao, NomeRefrigeracao);
   desligaFuncao(datador, NomeDatador);
-  desligaFuncao(soldas, NomeSoldas);
+  desligaFuncao(vertical, NomeVertical);
 }
 
 void resetCompleto() {
@@ -529,7 +527,7 @@ void resetCompleto() {
   desliga(faca);
   desliga(refrigeracao);
   desliga(datador);
-  desliga(soldas);
+  desliga(vertical);
 
   desliga(solda_vertical_PWM);
   desliga(solda_horizontal_PWM);
