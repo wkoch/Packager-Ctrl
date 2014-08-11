@@ -108,6 +108,8 @@ boolean stand_by = FALSO;
 boolean maquina_ligada = FALSO;
 boolean dosador_ligado = FALSO;
 boolean datador_ligado = FALSO;
+boolean desligamento_suave = FALSO;
+unsigned long desligarEm = 0;
 boolean alarme_ativo = FALSO;
 boolean fotocelula_liberada = FALSO;
 boolean fotocelula_cortou = FALSO;
@@ -203,7 +205,7 @@ void standBy() {
       geraPWM(pot_solda_vertical, &tempo_PWM_vertical, solda_vertical_PWM);
       geraPWM(pot_solda_horizontal, &tempo_PWM_horizontal, solda_horizontal_PWM);
       geraPWM(pot_solda_datador, &tempo_PWM_datador, solda_datador_PWM);
-      if (maquina_ligada) {
+      if (maquina_ligada || desligamento_suave) {
         iniciaTrabalho(); // Inicia Ciclos de Produção
       }
     } else {
@@ -269,11 +271,13 @@ void acionaGeral() {
   if (maquina_ligada) {
     ligaFuncao(geral, NomeGeral);
   } else {
-    if (ligado(geral)){
+    if (ligado(geral) && !desligamento_suave){
+      desligamento_suave = VERDADEIRO;
+      escreveSerial("Fazendo desligamento suave.");
+    } else if (conta_ciclos == desligarEm) {
       desligaFuncao(geral, NomeGeral);
       resetCompleto();
     }
-    // desligaFuncao(geral, NomeGeral);
   }
 }
 
@@ -330,6 +334,15 @@ void reiniciaCiclo(unsigned long tempo) {
   resetado = VERDADEIRO;
   fotocelula_liberada = FALSO;
   fotocelula_cortou = FALSO;
+  // if (desligamento_suave && desligarEm){
+  //   reiniciaSaidas();
+  //   resetCompleto();
+  // } else
+  if (desligamento_suave && dosador_ligado){
+    dosador_ligado = FALSO;
+    desligaFuncao(dosador, NomeDosador);
+    desligarEm = conta_ciclos + 1;
+  }
 }
 
 void cicloMedio() {
@@ -535,6 +548,8 @@ void resetCompleto() {
   maquina_ligada = FALSO;
   dosador_ligado = FALSO;
   datador_ligado = FALSO;
+  desligamento_suave = FALSO;
+  desligarEm = 0;
   fotocelula_liberada = FALSO;
   fotocelula_cortou = FALSO;
   produzindo = FALSO;
