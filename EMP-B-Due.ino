@@ -69,9 +69,11 @@ const unsigned long fim_faca = 800; // Tempo de saída da função Faca
 const unsigned long inicio_refrigeracao = 800; // Tempo de entrada da função Refrigeração
 const unsigned long fim_refrigeracao = 1450; // Tempo de saída da função Refrigeração
 // DATADOR
+const boolean datador_contra_mandibula = VERDADEIRO; // FALSO => Temporizado
 const unsigned long inicio_datador = 0; // Tempo de entrada da função Datador
 const unsigned long fim_datador = 400; // Tempo de saída da função Datador
 // SOLDAS VERTICAL E HORIZONTAL
+const boolean vertical_contra_mandibula = VERDADEIRO; // FALSO => Temporizado
 const unsigned long inicio_vertical = 0; // Tempo de entrada da função Solda Vertical
 const unsigned long fim_vertical = 400; // Tempo de saída da função Solda Vertical
 
@@ -225,8 +227,17 @@ void iniciaTrabalho() {
     funcaoSimples(mandibula, NomeMandibula, ti_mandibula, tf_mandibula);
     funcaoSegura(faca, NomeFaca, ti_faca, tf_faca, sensor_mandibula);
     funcaoSimples(refrigeracao, NomeRefrigeracao, ti_refrigeracao, tf_refrigeracao);
-    funcaoComLiberacao(datador, NomeDatador, ti_datador, tf_datador, datador_ligado);
-    funcaoBloqueante(vertical, NomeVertical, ti_vertical, tf_vertical);
+    if (datador_contra_mandibula && datador_ligado){
+      if (ligado(mandibula) && ativo(sensor_mandibula)){
+        desligaFuncao(datador, NomeDatador);
+      } else { ligaFuncao(datador, NomeDatador); }
+    } else { funcaoComLiberacao(datador, NomeDatador, ti_datador, tf_datador, datador_ligado); }
+
+    if (vertical_contra_mandibula){
+      if (ligado(mandibula) && ativo(sensor_mandibula)){
+        desligaFuncao(vertical, NomeVertical);
+      } else { ligaFuncao(vertical, NomeVertical); }
+    } else { funcaoBloqueante(vertical, NomeVertical, ti_vertical, tf_vertical); }
   }
   funcaoReset();
 }
@@ -369,20 +380,6 @@ void funcaoSegura(const byte saida, String nome, unsigned long inicio, unsigned 
   }
 }
 
-// void funcaoSegura(const byte saida, String nome, unsigned long inicio, unsigned long fim, byte seguranca, boolean alarmar){
-//   if (ativo(seguranca)){
-//     funcaoSimples(saida, nome, inicio, fim);
-//   } else {
-//     if (alarmar){
-//       bloqueioPorAlarme("Sensor da Mandíbula");
-//     } else {
-//       if (ligado(mandibula) && ativo(sensor_mandibula)){
-//         desligaFuncao(saida, nome);
-//       }
-//     }
-//   }
-// }
-
 void funcaoBloqueante(const byte saida, String nome, unsigned long inicio, unsigned long fim){
   if (ligado(mandibula) && ativo(sensor_mandibula)){
     desligaFuncao(saida, nome);
@@ -507,8 +504,12 @@ void reiniciaSaidas() {
   desligaFuncao(mandibula, NomeMandibula);
   desligaFuncao(faca, NomeFaca);
   desligaFuncao(refrigeracao, NomeRefrigeracao);
-  desligaFuncao(datador, NomeDatador);
-  desligaFuncao(vertical, NomeVertical);
+  if (!datador_contra_mandibula){
+    desligaFuncao(datador, NomeDatador);
+  }
+  if (!vertical_contra_mandibula){
+    desligaFuncao(vertical, NomeVertical);
+  }
 }
 
 void resetCompleto() {
