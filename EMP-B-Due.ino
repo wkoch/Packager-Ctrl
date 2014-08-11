@@ -224,9 +224,9 @@ void iniciaTrabalho() {
     leFotocelula();
     funcaoSimples(mandibula, NomeMandibula, ti_mandibula, tf_mandibula);
     funcaoSegura(faca, NomeFaca, ti_faca, tf_faca, sensor_mandibula);
-    funcaoBloqueante(refrigeracao, NomeRefrigeracao, ti_refrigeracao, tf_refrigeracao);
+    funcaoSimples(refrigeracao, NomeRefrigeracao, ti_refrigeracao, tf_refrigeracao);
     funcaoComLiberacao(datador, NomeDatador, ti_datador, tf_datador, datador_ligado);
-    funcaoSimples(vertical, NomeVertical, ti_vertical, tf_vertical);
+    funcaoBloqueante(vertical, NomeVertical, ti_vertical, tf_vertical);
   }
   funcaoReset();
 }
