@@ -72,7 +72,7 @@ const unsigned long inicio_refrigeracao = 800; // Tempo de entrada da função R
 const unsigned long fim_refrigeracao = 1450; // Tempo de saída da função Refrigeração
 // DATADOR
 const unsigned long inicio_datador = 0; // Tempo de entrada da função Datador
-const unsigned long fim_datador = 400; // Tempo de saída da função Datador
+const unsigned long fim_datador = 700; // Tempo de saída da função Datador
 // SOLDAS VERTICAL E HORIZONTAL
 const unsigned long inicio_soldas = 0; // Tempo de entrada da função Soldas Horizontal e Vertical
 const unsigned long fim_soldas = 400; // Tempo de saída da função Soldas Horizontal e Vertical
@@ -226,7 +226,7 @@ void iniciaTrabalho() {
     leFotocelula();
     funcaoSimples(mandibula, NomeMandibula, ti_mandibula, tf_mandibula);
     funcaoSegura(faca, NomeFaca, ti_faca, tf_faca, sensor_mandibula);
-    funcaoSimples(refrigeracao, NomeRefrigeracao, ti_refrigeracao, tf_refrigeracao);
+    funcaoBloqueante(refrigeracao, NomeRefrigeracao, ti_refrigeracao, tf_refrigeracao);
     funcaoComLiberacao(datador, NomeDatador, ti_datador, tf_datador, datador_ligado);
     funcaoSimples(soldas, NomeSoldas, ti_soldas, tf_soldas);
   }
@@ -371,14 +371,32 @@ void funcaoSegura(const byte saida, String nome, unsigned long inicio, unsigned 
   }
 }
 
+// void funcaoSegura(const byte saida, String nome, unsigned long inicio, unsigned long fim, byte seguranca, boolean alarmar){
+//   if (ativo(seguranca)){
+//     funcaoSimples(saida, nome, inicio, fim);
+//   } else {
+//     if (alarmar){
+//       bloqueioPorAlarme("Sensor da Mandíbula");
+//     } else {
+//       if (ligado(mandibula) && ativo(sensor_mandibula)){
+//         desligaFuncao(saida, nome);
+//       }
+//     }
+//   }
+// }
+
+void funcaoBloqueante(const byte saida, String nome, unsigned long inicio, unsigned long fim){
+  if (ligado(mandibula) && ativo(sensor_mandibula)){
+    desligaFuncao(saida, nome);
+  } else {
+    funcaoSimples(saida, nome, inicio, fim);
+  }
+}
+
 void funcaoComLiberacao(const byte saida, String nome, unsigned long inicio, unsigned long fim, byte liberacao){
-  inicio += inicio_ciclo;
-  fim += inicio_ciclo;
-  if (desligado(saida) && liberacao){
-    if (tempo_atual >= inicio && tempo_atual < fim) {
-      ligaFuncao(saida, nome);
-    }
-  } else if (tempo_atual >= fim) {
+  if (liberacao){
+    funcaoBloqueante(saida, nome, inicio, fim);
+  } else {
     desligaFuncao(saida, nome);
   }
 }
@@ -399,6 +417,7 @@ void leFotocelula(){
   if (fotocelula_liberada && !fotocelula_cortou){
     if (ativo(fotocelula)){
       fotocelula_cortou = VERDADEIRO;
+      escreveSerial("Fotocelula fez o corte.");
       reiniciaSaidas();
     }
   }
