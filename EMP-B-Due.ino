@@ -190,7 +190,6 @@ void setup() {
 void loop() {
   modoAlarme();
   standBy();
-  modoTeste();
 }
 
 // MODOS DE TRABALHO
@@ -267,17 +266,36 @@ void bloqueioPorAlarme(String texto) {
 void acionaGeral() {
   btUmClique(bt_geral, &estbt_geral, &estbta_geral, &atr_geral,
              &maquina_ligada);
+  if (maquina_ligada) {
+    ligaFuncao(geral, NomeGeral);
+  } else {
+    if (ligado(geral)){
+      desligaFuncao(geral, NomeGeral);
+      resetCompleto();
+    }
+    // desligaFuncao(geral, NomeGeral);
+  }
 }
 
 void acionaDosador() {
   btUmClique(bt_dosador, &estbt_dosador, &estbta_dosador, &atr_dosador,
              &dosador_ligado);
+  if (dosador_ligado) {
+    ligaFuncao(dosador, NomeDosador);
+  } else {
+    desligaFuncao(dosador, NomeDosador);
+  }
 }
 
 void acionaDatador() {
-  if (maquina_ligada && !alarme_ativo) {
+  if (maquina_ligada) {
     btUmClique(bt_datador, &estbt_datador, &estbta_datador, &atr_datador,
                &datador_ligado);
+  }
+  if (datador_ligado) {
+    ligaFuncao(led_datador, NomeDatador);
+  } else {
+    desligaFuncao(led_datador, NomeDatador);
   }
 }
 
@@ -345,7 +363,7 @@ void geraPWM(byte pot, unsigned long *inicio, byte saida) {
   unsigned long ativo = *inicio + map(analogRead(pot), 0, 1023, 0, ciclo_PWM);
   unsigned long inativo = ciclo_PWM - ativo;
   unsigned long pwm = *inicio + ciclo_PWM;
-  if (maquina_ligada && !alarme_ativo) {
+  if (maquina_ligada) {
     if (tempo_atual > *inicio && tempo_atual <= ativo) {
       liga(saida);
     } else if (tempo_atual > ativo && tempo_atual < pwm) {
@@ -533,25 +551,4 @@ void resetCompleto() {
   desliga(solda_vertical_PWM);
   desliga(solda_horizontal_PWM);
   desliga(solda_datador_PWM);
-}
-
-void modoTeste() {
-  if (maquina_ligada) {
-    ligaFuncao(geral, NomeGeral);
-  } else {
-    if (ligado(geral)){
-      resetCompleto();
-    }
-    desligaFuncao(geral, NomeGeral);
-  }
-  if (dosador_ligado) {
-    ligaFuncao(dosador, NomeDosador);
-  } else {
-    desligaFuncao(dosador, NomeDosador);
-  }
-  if (datador_ligado) {
-    ligaFuncao(led_datador, NomeDatador);
-  } else {
-    desligaFuncao(led_datador, NomeDatador);
-  }
 }
