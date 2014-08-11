@@ -63,8 +63,8 @@ const unsigned long fim_mandibula = 1500; // Tempo de saída da função Mandíb
 const unsigned long inicio_fotocelula = 1250; // Tempo de entrada da liberação da Fotocélula
 const unsigned long fim_fotocelula = 1400; // Tempo de saída da liberação da Fotocélula
 // FACA
-const unsigned long inicio_faca = 600; // Tempo de entrada da função Faca
-const unsigned long fim_faca = 800; // Tempo de saída da função Faca
+const unsigned long inicio_faca = 1200; // Tempo de entrada da função Faca
+const unsigned long fim_faca = 1400; // Tempo de saída da função Faca
 // REFRIGERAÇÃO
 const unsigned long inicio_refrigeracao = 800; // Tempo de entrada da função Refrigeração
 const unsigned long fim_refrigeracao = 1450; // Tempo de saída da função Refrigeração
@@ -228,17 +228,8 @@ void iniciaTrabalho() {
     funcaoSimples(mandibula, NomeMandibula, ti_mandibula, tf_mandibula);
     funcaoSegura(faca, NomeFaca, ti_faca, tf_faca, sensor_mandibula);
     funcaoSimples(refrigeracao, NomeRefrigeracao, ti_refrigeracao, tf_refrigeracao);
-    if (datador_contra_mandibula && datador_ligado){
-      if (ligado(mandibula) && ativo(sensor_mandibula)){
-        desligaFuncao(datador, NomeDatador);
-      } else { ligaFuncao(datador, NomeDatador); }
-    } else { funcaoComLiberacao(datador, NomeDatador, ti_datador, tf_datador, datador_ligado); }
-
-    if (vertical_contra_mandibula){
-      if (ligado(mandibula) && ativo(sensor_mandibula)){
-        desligaFuncao(vertical, NomeVertical);
-      } else { ligaFuncao(vertical, NomeVertical); }
-    } else { funcaoBloqueante(vertical, NomeVertical, ti_vertical, tf_vertical); }
+    funcaoComLiberacao(datador, NomeDatador, ti_datador, tf_datador, datador_ligado, datador_contra_mandibula);
+    funcaoBloqueante(vertical, NomeVertical, ti_vertical, tf_vertical, vertical_contra_mandibula);
   }
   funcaoReset();
 }
@@ -251,6 +242,8 @@ void modoAlarme() {
       bloqueioPorAlarme("Sensor do Painel");
     } else if (ativo(sensor_maquina)) {
       bloqueioPorAlarme("Sensor da Máquina");
+    } else if (ligado(faca) && inativo(sensor_mandibula)){
+      bloqueioPorAlarme("Sensor da Mandíbula2");
     }
   }
 }
@@ -404,24 +397,46 @@ void funcaoSimples(const byte saida, String nome, unsigned long inicio, unsigned
 }
 
 void funcaoSegura(const byte saida, String nome, unsigned long inicio, unsigned long fim, byte seguranca){
-  if (ativo(seguranca)){
-    funcaoSimples(saida, nome, inicio, fim);
-  } else {
-    bloqueioPorAlarme("Sensor da Mandíbula");
-  }
-}
-
-void funcaoBloqueante(const byte saida, String nome, unsigned long inicio, unsigned long fim){
-  if (ligado(mandibula) && ativo(sensor_mandibula)){
+  inicio += inicio_ciclo;
+  fim += inicio_ciclo;
+  if (desligado(saida)){
+    if (tempo_atual >= inicio && tempo_atual < fim) {
+      if (ativo(seguranca)){
+        ligaFuncao(saida, nome);
+      } else {
+        bloqueioPorAlarme("Sensor da Mandibula");
+      }
+    }
+  } else if (tempo_atual >= fim || inativo(seguranca)) {
     desligaFuncao(saida, nome);
+  }
+
+  // if (ativo(seguranca)){
+  //   funcaoSimples(saida, nome, inicio, fim);
+  // } else {
+  //   bloqueioPorAlarme("Sensor da Mandíbula");
+  // }
+}
+
+void funcaoBloqueante(const byte saida, String nome, unsigned long inicio, unsigned long fim, boolean contra_mandibula){
+  if (contra_mandibula){
+    if (ativo(sensor_mandibula)){
+      desligaFuncao(saida, nome);
+    } else {
+      ligaFuncao(saida, nome);
+    }
   } else {
-    funcaoSimples(saida, nome, inicio, fim);
+    if (ativo(sensor_mandibula)){
+      desligaFuncao(saida, nome);
+    } else {
+      funcaoSimples(saida, nome, inicio, fim);
+    }
   }
 }
 
-void funcaoComLiberacao(const byte saida, String nome, unsigned long inicio, unsigned long fim, byte liberacao){
+void funcaoComLiberacao(const byte saida, String nome, unsigned long inicio, unsigned long fim, byte liberacao, boolean contra_mandibula){
   if (liberacao){
-    funcaoBloqueante(saida, nome, inicio, fim);
+    funcaoBloqueante(saida, nome, inicio, fim, contra_mandibula);
   } else {
     desligaFuncao(saida, nome);
   }
@@ -456,7 +471,7 @@ byte lePino(byte pino) { return digitalRead(pino); }
 void liga(byte saida) { digitalWrite(saida, LIGA); }
 
 void ligaFuncao(byte saida, String nome) {
-  if (desligado(saida)) {
+  if (desligado(saida) && !alarme_ativo) {
     liga(saida);
     if (ligado(saida)){
       escreveSerial(">> " + nome + " Ligado.");
