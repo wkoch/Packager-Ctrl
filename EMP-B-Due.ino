@@ -95,8 +95,8 @@ int estbt_dosador;              // Estado do Botão Dosador
 int estbta_dosador = BAIXO;     // Estado anterior do Botão Dosador
 unsigned long atr_dosador = 0;  // Atraso do Botão Dosador
 int estbt_datador;              // Estado do Botão Datador
-int estbta_datador = BAIXO;     // Estado anterior do Botão Dosador
-unsigned long atr_datador = 0;  // Atraso do Botão Dosador
+int estbta_datador = BAIXO;     // Estado anterior do Botão Datador
+unsigned long atr_datador = 0;  // Atraso do Botão Datador
 
 // PWM DAS SOLDAS
 unsigned long tempo_PWM_vertical = 0;
@@ -267,7 +267,7 @@ void acionaGeral() {
     if (ligado(geral) && !desligamento_suave){
       desligamento_suave = VERDADEIRO;
       escreveSerial("Fazendo desligamento suave.");
-    } else if (conta_ciclos == desligarEm) {
+    } else if (desligamento_suave && conta_ciclos == desligarEm) {
       desligaFuncao(geral, NomeGeral);
       resetCompleto();
     }
@@ -331,10 +331,14 @@ void reiniciaCiclo(unsigned long tempo) {
   //   reiniciaSaidas();
   //   resetCompleto();
   // } else
-  if (desligamento_suave && dosador_ligado){
-    dosador_ligado = FALSO;
-    desligaFuncao(dosador, NomeDosador);
-    desligarEm = conta_ciclos + 1;
+  if (desligamento_suave){
+    if (dosador_ligado){
+      dosador_ligado = FALSO;
+      desligaFuncao(dosador, NomeDosador);
+      desligarEm = conta_ciclos + 1;
+    } else {
+      desligarEm = conta_ciclos;
+    }
   }
 }
 
