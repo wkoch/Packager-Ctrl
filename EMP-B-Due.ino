@@ -263,14 +263,12 @@ void acionaGeral() {
              &maquina_ligada);
   if (maquina_ligada) {
     ligaFuncao(geral, NomeGeral);
-  } else {
-    if (ligado(geral) && !desligamento_suave){
-      desligamento_suave = VERDADEIRO;
-      escreveSerial("Fazendo desligamento suave.");
-    } else if (desligamento_suave && conta_ciclos == desligarEm) {
-      desligaFuncao(geral, NomeGeral);
-      resetCompleto();
-    }
+  } else if (ligado(geral) && !desligamento_suave){
+    desligamento_suave = VERDADEIRO;
+    escreveSerial("Fazendo desligamento suave.");
+  } else if (desligamento_suave && conta_ciclos == desligarEm) {
+    desligaFuncao(geral, NomeGeral);
+    resetCompleto();
   }
 }
 
@@ -288,11 +286,11 @@ void acionaDatador() {
   if (maquina_ligada) {
     btUmClique(bt_datador, &estbt_datador, &estbta_datador, &atr_datador,
                &datador_ligado);
-  }
-  if (datador_ligado) {
-    ligaFuncao(led_datador, NomeDatador);
-  } else {
-    desligaFuncao(led_datador, NomeDatador);
+    if (datador_ligado) {
+      ligaFuncao(led_datador, NomeDatador);
+    } else {
+      desligaFuncao(led_datador, NomeDatador);
+    }
   }
 }
 
@@ -327,10 +325,6 @@ void reiniciaCiclo(unsigned long tempo) {
   resetado = VERDADEIRO;
   fotocelula_liberada = FALSO;
   fotocelula_cortou = FALSO;
-  // if (desligamento_suave && desligarEm){
-  //   reiniciaSaidas();
-  //   resetCompleto();
-  // } else
   if (desligamento_suave){
     if (dosador_ligado){
       dosador_ligado = FALSO;
@@ -414,12 +408,6 @@ void funcaoSegura(const byte saida, String nome, unsigned long inicio, unsigned 
   } else if (tempo_atual >= fim || inativo(seguranca)) {
     desligaFuncao(saida, nome);
   }
-
-  // if (ativo(seguranca)){
-  //   funcaoSimples(saida, nome, inicio, fim);
-  // } else {
-  //   bloqueioPorAlarme("Sensor da Mandíbula");
-  // }
 }
 
 void funcaoBloqueante(const byte saida, String nome, unsigned long inicio, unsigned long fim, boolean contra_mandibula){
