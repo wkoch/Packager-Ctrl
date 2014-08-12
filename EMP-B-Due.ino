@@ -275,9 +275,9 @@ void acionaGeral() {
 void acionaDosador() {
   btUmClique(bt_dosador, &estbt_dosador, &estbta_dosador, &atr_dosador,
              &dosador_ligado);
-  if (dosador_ligado) {
+  if (dosador_ligado && !desligamento_suave && (!maquina_ligada || conta_ciclos >= 3)) {
     ligaFuncao(dosador, NomeDosador);
-  } else {
+  } else if (!dosador_ligado) {
     desligaFuncao(dosador, NomeDosador);
   }
 }
