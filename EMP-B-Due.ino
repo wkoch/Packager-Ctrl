@@ -63,8 +63,8 @@ const unsigned long fim_mandibula = 1500; // Tempo de saída da função Mandíb
 const unsigned long inicio_fotocelula = 1250; // Tempo de entrada da liberação da Fotocélula
 const unsigned long fim_fotocelula = 1400; // Tempo de saída da liberação da Fotocélula
 // FACA
-const unsigned long inicio_faca = 1200; // Tempo de entrada da função Faca
-const unsigned long fim_faca = 1400; // Tempo de saída da função Faca
+const unsigned long inicio_faca = 600; // Tempo de entrada da função Faca
+const unsigned long fim_faca = 800; // Tempo de saída da função Faca
 // REFRIGERAÇÃO
 const unsigned long inicio_refrigeracao = 800; // Tempo de entrada da função Refrigeração
 const unsigned long fim_refrigeracao = 1450; // Tempo de saída da função Refrigeração
@@ -351,6 +351,8 @@ void cicloMedio() {
     ajustaCiclo(&tf_datador, fim_datador);
     ajustaCiclo(&ti_vertical, inicio_vertical);
     ajustaCiclo(&tf_vertical, fim_vertical);
+    ajustaCiclo(&ti_fotocelula, inicio_fotocelula);
+    ajustaCiclo(&tf_fotocelula, fim_fotocelula);
   }
 }
 
