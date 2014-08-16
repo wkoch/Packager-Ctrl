@@ -47,6 +47,7 @@ const byte faca = 42; // Saída da Faca
 const byte refrigeracao = 44; // Saída da Refrigeração
 const byte datador = 46; // Saída do Datador
 const byte vertical = 48; // Saída da Solda Vertical
+const byte led_alarme = 13; // Saída do LED indicador de Alarmes
 // SAÍDAS PWM
 const byte solda_vertical_PWM = 33; // Saída da Solda Vertical
 const byte solda_horizontal_PWM = 35; // Saída da Solda Horizontal
@@ -179,8 +180,10 @@ void setup() {
   pinMode(refrigeracao, SAIDA);
   pinMode(datador, SAIDA);
   pinMode(vertical, SAIDA);
+  pinMode(led_alarme, SAIDA);
   // ESTADO INICIAL DAS SAÍDAS
   resetCompleto();
+  desliga(led_alarme);
 
 
   // REMOVER >>
@@ -245,6 +248,8 @@ void modoAlarme() {
     } else if (ligado(faca) && inativo(sensor_mandibula)){
       bloqueioPorAlarme("Sensor da Mandíbula2");
     }
+  } else {
+    liga(led_alarme);
   }
 }
 
