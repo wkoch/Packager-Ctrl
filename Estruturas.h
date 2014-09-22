@@ -1,9 +1,10 @@
 /*
- EMP-B Due - Estrutura de Dados
- V0.1 21/09/2014 William Koch
+ Emp-Ctrl-Due
+ V1.1 21/09/2014 William Koch
 
- Estruturas de Dados.
+ Estruturas de dados.
 */
+
 
 // ESTRUTURAS
 struct pinos {

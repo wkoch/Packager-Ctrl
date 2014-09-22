@@ -1,6 +1,6 @@
 /*
- EMP-B Due - Funções
- V0.1 21/09/2014 William Koch
+ Emp-Ctrl-Due
+ V1.1 21/09/2014 William Koch
 
  Funções específicas.
 */

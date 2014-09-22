@@ -1,9 +1,10 @@
 /*
- EMP-B Due - Auxiliares
- V0.1 21/09/2014 William Koch
+ Emp-Ctrl-Due
+ V1.1 21/09/2014 William Koch
 
  Funções auxiliares gerais.
 */
+
 
 
 byte lePino(byte pino) { return digitalRead(pino); }

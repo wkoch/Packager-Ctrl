@@ -1,10 +1,9 @@
 /*
- EMP-B Due - Configurações
- V0.1 21/09/2014 William Koch
+ Emp-Ctrl-Due
+ V1.1 21/09/2014 William Koch
 
- Todas as opções de configurações do programa.
+ Configurações do programa.
 */
-
 
 // CONFIGURAÇÕES
 

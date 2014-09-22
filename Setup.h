@@ -1,9 +1,10 @@
 /*
- EMP-B Due - Setup
- V0.1 21/09/2014 William Koch
+ Emp-Ctrl-Due
+ V1.1 21/09/2014 William Koch
 
- Funções de setup.
+ Funções de Setup.
 */
+
 
 
 void Comunicacao_Serial();
