@@ -1,6 +1,6 @@
 /*
- EMP-B Due
- V0.1 03/08/2014 William Koch
+ Emp-Ctrl-Due
+ v1.0 16/08/2014 William Koch
 
  Controlador de Empacotadeira com Arduino Due.
 */
