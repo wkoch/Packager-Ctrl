@@ -7,36 +7,30 @@
 
 
 // ESTRUTURAS
-struct pinos {
-  byte entrada;
-  byte saida;
-  byte led;
+typedef struct pinos {
+  byte entrada, saida, led;
 };
 
-struct tempos {
-  unsigned long liga;
-  unsigned long desliga;
+typedef struct tempos {
+  unsigned long liga, desliga;
   boolean contrario;
 };
 
-struct atrasos {
-  unsigned long atual;
-  unsigned long anterior;
+typedef struct atrasos {
+  unsigned long atual, anterior;
 };
 
-struct estados {
-  boolean liberado;
-  boolean ativo;
-  byte atual;
-  byte anterior;
+typedef struct estados {
+  boolean liberado, ativo;
+  byte atual, anterior;
 };
 
-struct pwm {
+typedef struct pwm {
   unsigned long ciclo;
   struct pinos pino;
 };
 
-struct funcoes {
+typedef struct funcoes {
   char nome;
   struct pinos pino;
   struct tempos tempo;
@@ -45,10 +39,6 @@ struct funcoes {
   boolean proteger;
 };
 
-struct modos {
-  boolean standby;
-  boolean producao;
-  boolean desligamento;
-  boolean alarme;
-  boolean manutencao;
+typedef struct modos {
+  boolean standby, producao, desligamento, alarme, manutencao;
 };

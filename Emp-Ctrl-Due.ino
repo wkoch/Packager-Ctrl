@@ -5,16 +5,17 @@
  Controlador de Empacotadeira com Arduino Due.
 */
 
-#include "Arduino.h"
+#include <SlowPWM.h>
 #include "Estruturas.h"
 #include "Config.h"
 #include "Setup.h"
 #include "Auxiliares.h"
 #include "Funcoes.h"
 
+
 void setup() {
-  Comunicacao_Serial();
-  Configura_Pinos();
+  configurar();
+  configura_pinos();
 }
 
 void loop() {

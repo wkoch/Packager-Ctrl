@@ -7,17 +7,18 @@
 
 
 
-void Comunicacao_Serial();
+void comunicacao_serial();
 void configura_es(funcoes *funcao);
-void Configura_Pinos();
+void configura_pinos();
 
-void Comunicacao_Serial(){
-  if (VERDADEIRO == modo.manutencao){
+void comunicacao_serial(){
+  if (modo.manutencao){
     Serial.begin(9600);
   }
 }
 
-void Configura_Pinos(){
+void configura_pinos(){
+  comunicacao_serial();
   configura_es(&geral);
   configura_es(&dosador);
   configura_es(&datador);
