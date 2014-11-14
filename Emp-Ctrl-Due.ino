@@ -91,12 +91,6 @@ void loop() {
   }
 }
 
-/*void setButtons() {
-  OnePush buttonStarter(22, INPUT_PULLUP);
-  OnePush buttonDater(24, INPUT_PULLUP);
-  OnePush feeder.button(feeder.in, INPUT_PULLUP);
-}*/
-
 void updateAll() {
   cycle.update();
   general.button.update();

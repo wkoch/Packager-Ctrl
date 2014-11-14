@@ -31,7 +31,7 @@ struct function_b { // With a button.
 
 struct sensors {
   byte reset, photocell, security1, security2, security3;
-}
+};
 
 
 // Configurations
@@ -103,51 +103,51 @@ struct function jaw {
    .lock = false
 };
 
-  // PHOTOCELL
-  struct function photocell {
-    .name = "Photocell",
-    .in = 6,
+// PHOTOCELL
+struct function photocell {
+   .name = "Photocell",
+     .in = 6,
     .out = 0,
-    .start = 1250,
-    .stop = 1400,
-    .lock = false
-  };
+  .start = 1250,
+   .stop = 1400,
+   .lock = false
+};
 
 // KNIFE
 struct function knife {
-  .name = "Knife",
-  .in = 2,
-  .out = 42,
+   .name = "Knife",
+     .in = 2,
+    .out = 42,
   .start = 600,
-  .stop = 800,
-  .lock = false
+   .stop = 800,
+   .lock = false
 };
 
 // COOLER
 struct function cooler {
-  .name = "Cooler",
-  .in = 44,
-  .out = 45,
+   .name = "Cooler",
+     .in = 44,
+    .out = 45,
   .start = 800,
-  .stop = 1450,
-  .lock = false
+   .stop = 1450,
+   .lock = false
 };
 
 // WELDERS
 struct function welders {
-  .name = "Welders",
-  .in = 48,
-  .out = 49,
+   .name = "Welders",
+     .in = 48,
+    .out = 49,
   .start = 0,
-  .stop = 400,
-  .lock = false
+   .stop = 400,
+   .lock = false
 };
 
 // SENSORS
 struct sensors sensor {
-  .reset = 2;
+      .reset = 2,
   .photocell = photocell.in,
   .security1 = 32,
   .security2 = 34,
   .security3 = 36
-}
+};
