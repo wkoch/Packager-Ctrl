@@ -67,15 +67,22 @@ void loop() {
     // Buttons work.
     updateAll();
     digitalWrite(feeder.out, feeder.button.state());
-    if (general.button.status() == true) {
+    digitalWrite(general.out, general.button.state());
+    if (digitalRead(general.out) == ON) {
       modes.set(STARTING);
     }
   } else if (modes.status(STARTING)) {
-    digitalWrite(feeder.out, OFF);
-    digitalWrite(feeder.out, ON);
-
     // 3 empty cycles.
     updateAll();
+    if (digitalRead(feeder.out) == ON) {
+      feeder.button.next();
+      /*digitalWrite(feeder.out, OFF);*/
+      digitalWrite(general.out, general.button.state());
+    }
+    digitalWrite(general.out, general.button.state());
+    if (digitalRead(general.out) == OFF) {
+      modes.set(STANDBY);
+    }
   } else if (modes.status(PRODUCTION)) {
     // Normal production.
     updateAll();
