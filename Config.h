@@ -1,196 +1,153 @@
 /*
- Emp-Ctrl-Due
- V1.1 21/09/2014 William Koch
-
- Configurações do programa.
+  Emp-Ctrl-Due - v2.0a - 14/11/2014
+  Arduino Due application for packaging machine automation.
+  Created by William Koch.
+  Released into the public domain.
 */
 
-// CONFIGURAÇÕES
+#include <Debounce.h>
+#include <OnePush.h>
 
-#define ENTRADA INPUT_PULLUP  // INPUT ou INPUT_PULLUP
-// #define BOTAO INPUT_PULLUP  // INPUT ou INPUT_PULLUP
-// #define SENSOR INPUT        // INPUT ou INPUT_PULLUP
-#define SAIDA OUTPUT
-#define ALTO LOW    // Deve ser invertido para INPUT_PULLUP
-#define BAIXO HIGH  // Deve ser invertido para INPUT_PULLUP
-#define LIGA HIGH
-#define DESLIGA LOW
-#define VERDADEIRO true
-#define FALSO false
+struct pwm {
+  String name;
+  unsigned long cycle;
+  byte in, out;
+};
 
-void Configurar(){
-  // PWM SOLDA VERTICAL
-  struct pwm solda_vertical {
-    .ciclo = 1000,
-    .pino.entrada = A0,
-    .pino.saida = 33
+struct function {
+  String name;
+  byte in, out;
+  unsigned long start, stop;
+  boolean lock;
+};
+
+struct function_b { // With a button.
+  String name;
+  OnePush button;
+  byte in, out;
+  unsigned long start, stop;
+  boolean lock;
+};
+
+struct sensors {
+  byte reset, photocell, security1, security2, security3;
+}
+
+
+// Configurations
+// VERTICAL WELDER PWM
+struct pwm vWelder {
+   .name = "Vertical Welder",
+  .cycle = 1000,
+     .in = A0,
+    .out = 33
+};
+
+// HORIZONTAL WELDER PWM
+struct pwm hWelder {
+   .name = "Horizontal Welder",
+  .cycle = 1000,
+     .in = A1,
+    .out = 35
+};
+
+// DATER WELDER PWM
+struct pwm dWelder {
+   .name = "Dater Welder",
+  .cycle = 1000,
+     .in = A2,
+    .out = 37
+};
+
+// PRODUCTION FUNCTIONS
+// GENERAL
+struct function_b general {
+   .name = "General",
+ .button = OnePush(general.in),
+     .in = 22,
+    .out = 23,
+  .start = 0,
+   .stop = 0,
+   .lock = false
+};
+
+// FEEDER
+struct function_b feeder {
+   .name = "Feeder",
+ .button = OnePush(feeder.in),
+     .in = 24,
+    .out = 25,
+  .start = 0,
+   .stop = 0,
+   .lock = false
+};
+
+// DATER
+struct function_b dater {
+   .name = "Dater",
+ .button = OnePush(dater.in),
+     .in = 26,
+    .out = 46,
+  .start = 0,
+   .stop = 400,
+   .lock = false
+};
+
+// JAW
+struct function jaw {
+   .name = "Jaw",
+     .in = 0,
+    .out = 40,
+  .start = 550,
+   .stop = 1500,
+   .lock = false
+};
+
+  // PHOTOCELL
+  struct function photocell {
+    .name = "Photocell",
+    .in = 6,
+    .out = 0,
+    .start = 1250,
+    .stop = 1400,
+    .lock = false
   };
 
-  // PWM SOLDA HORIZONTAL
-  struct pwm solda_horizontal {
-    .ciclo = 1000,{
-    .entrada = A1,
-    .saida = 35}
-  };
+// KNIFE
+struct function knife {
+  .name = "Knife",
+  .in = 2,
+  .out = 42,
+  .start = 600,
+  .stop = 800,
+  .lock = false
+};
 
-  // PWM SOLDA DATADOR
-  struct pwm solda_datador {
-    .ciclo = 1000,{
-    .entrada = A2,
-    .saida = 37}
-  };
+// COOLER
+struct function cooler {
+  .name = "Cooler",
+  .in = 44,
+  .out = 45,
+  .start = 800,
+  .stop = 1450,
+  .lock = false
+};
 
-  // FUNÇÕES DE PRODUÇÃO
-  // GERAL
-  struct funcoes geral {
-    .nome = "Geral",
-    .pino.entrada = 22,
-    .pino.saida = 23,
-    .pino.led = 0,
-    .tempo.liga = 0,
-    .tempo.desliga = 0,
-    .tempo.contrario = FALSO,
-    .atraso.atual = 0,
-    .atraso.anterior = 0,
-    .estado.liberado = FALSO,
-    .estado.ativo = FALSO,
-    .estado.atual = BAIXO,
-    .estado.anterior = BAIXO,
-    .proteger = FALSO
-  };
+// WELDERS
+struct function welders {
+  .name = "Welders",
+  .in = 48,
+  .out = 49,
+  .start = 0,
+  .stop = 400,
+  .lock = false
+};
 
-  // DOSADOR
-  struct funcoes dosador = {
-    .nome = "Dosador",
-    .pino.entrada = 24,
-    .pino.saida = 25,
-    .pino.led = 0,
-    .tempo.liga = 0,
-    .tempo.desliga = 0,
-    .tempo.contrario = FALSO,
-    .atraso.atual = 0,
-    .atraso.anterior = 0,
-    .estado.liberado = FALSO,
-    .estado.ativo = FALSO,
-    .estado.atual = BAIXO,
-    .estado.anterior = BAIXO,
-    .proteger = FALSO
-  };
-
-  // DATADOR
-  struct funcoes datador = {
-    .nome = "Datador",
-    .pino.entrada = 26,
-    .pino.saida = 46,
-    .pino.led = 27,
-    .tempo.liga = 0,
-    .tempo.desliga = 400,
-    .tempo.contrario = FALSO,
-    .atraso.atual = 0,
-    .atraso.anterior = 0,
-    .estado.liberado = FALSO,
-    .estado.ativo = FALSO,
-    .estado.atual = BAIXO,
-    .estado.anterior = BAIXO,
-    .proteger = FALSO
-  };
-
-  // MANDÍBULA
-  struct funcoes mandibula = {
-    .nome = "Mandíbula",
-    .pino.entrada = 0,
-    .pino.saida = 40,
-    .pino.led =41,
-    .tempo.liga = 550,
-    .tempo.desliga = 1500,
-    .tempo.contrario = FALSO,
-    .atraso.atual = 0,
-    .atraso.anterior = 0,
-    .estado.liberado = FALSO,
-    .estado.ativo = FALSO,
-    .estado.atual = BAIXO,
-    .estado.anterior = BAIXO,
-    .proteger = FALSO
-  };
-
-  // FOTOCÉLULA
-  struct funcoes fotocelula = {
-    .nome = "Fotocélula",
-    .pino.entrada = 6,
-    .pino.saida = 0,
-    .pino.led = 7,
-    .tempo.liga = 1250,
-    .tempo.desliga = 1400,
-    .tempo.contrario = FALSO,
-    .atraso.atual = 0,
-    .atraso.anterior = 0,
-    .estado.liberado = FALSO,
-    .estado.ativo = FALSO,
-    .estado.atual = BAIXO,
-    .estado.anterior = BAIXO,
-    .proteger = FALSO
-  };
-
-  // FACA
-  struct funcoes faca = {
-    .nome = "Faca",
-    .pino.entrada = 2,
-    .pino.saida = 42,
-    .pino.led = 43,
-    .tempo.liga = 600,
-    .tempo.desliga = 800,
-    .tempo.contrario = FALSO,
-    .atraso.atual = 0,
-    .atraso.anterior = 0,
-    .estado.liberado = FALSO,
-    .estado.ativo = FALSO,
-    .estado.atual = BAIXO,
-    .estado.anterior = BAIXO,
-    .proteger = VERDADEIRO
-  };
-
-  // REFRIGERAÇÃO
-  struct funcoes refrigeracao = {
-    .nome = "Refrigeração",
-    .pino.entrada = 0,
-    .pino.saida = 44,
-    .pino.led = 45,
-    .tempo.liga = 800,
-    .tempo.desliga = 1450,
-    .tempo.contrario = FALSO,
-    .atraso.atual = 0,
-    .atraso.anterior = 0,
-    .estado.liberado = FALSO,
-    .estado.ativo = FALSO,
-    .estado.atual = BAIXO,
-    .estado.anterior = BAIXO,
-    .proteger = VERDADEIRO
-  };
-
-  // SOLDAS HORIZONTAL E VERTICAL
-  struct funcoes soldas = {
-    .nome = "Soldas",
-    .pino.entrada = 0,
-    .pino.saida = 48,
-    .pino.led = 49,
-    .tempo.liga = 0,
-    .tempo.desliga = 400,
-    .tempo.contrario = FALSO,
-    .atraso.atual = 0,
-    .atraso.anterior = 0,
-    .estado.liberado = FALSO,
-    .estado.ativo = FALSO,
-    .estado.atual = BAIXO,
-    .estado.anterior = BAIXO,
-    .proteger = FALSO
-  };
-
-  // MODOS DE FUNCIONAMENTO
-  struct modos modo = {
-    .standby = FALSO,
-    .producao = FALSO,
-    .desligamento = FALSO,
-    .alarme = FALSO,
-    .manutencao = VERDADEIRO
-  };
+// SENSORS
+struct sensors sensor {
+  .reset = 2;
+  .photocell = photocell.in,
+  .security1 = 32,
+  .security2 = 34,
+  .security3 = 36
 }

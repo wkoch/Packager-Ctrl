@@ -1,24 +1,105 @@
 /*
- Emp-Ctrl-Due
- V1.1 21/09/2014 William Koch
-
- Controlador de Empacotadeira com Arduino Due.
+  Emp-Ctrl-Due - v2.0a - 14/11/2014
+  Arduino Due application for packaging machine automation.
+  Created by William Koch.
+  Released into the public domain.
 */
 
-#include <SlowPWM.h>
-#include "Estruturas.h"
+#include <Modus.h>
+#include <Debounce.h>
+#include <OnePush.h>
+#include <Cyclic.h>
 #include "Config.h"
-#include "Setup.h"
-#include "Auxiliares.h"
-#include "Funcoes.h"
 
+// Operation Modes
+#define WARMUP      0 // Warm-up, a few seconds of delay.
+#define STANDBY     1 // Some buttons are working.
+#define STARTING    2 // 3 empty cycles.
+#define PRODUCTION  3 //
+#define STOPPING    4 // Finishs current cycle, empties the machine and stops.
+#define COOLDOWN    5 //
+#define MAINTENANCE 6 // Maintenance mode.
+#define ALARM       7 // Alarm mode.
+
+#define IN     INPUT_PULLUP  // INPUT or INPUT_PULLUP
+#define BUTTON INPUT_PULLUP  // INPUT or INPUT_PULLUP
+#define SENSOR INPUT_PULLUP        // INPUT or INPUT_PULLUP
+#define OUT    OUTPUT
+#define ON     HIGH
+#define OFF    LOW
+#define BETWEEN(x, a, b)  ((a) <= (x) && (x) <= (b))
+
+Modus modes(7);
+Cyclic cycle(2000, 900);
 
 void setup() {
-  configurar();
-  configura_pinos();
+  // BUTTONS
+  pinMode(general.in, BUTTON);
+  pinMode(dater.in, BUTTON);
+  pinMode(feeder.in, BUTTON);
+  // SENSORS
+  pinMode(sensor.reset, SENSOR);
+  pinMode(sensor.photocell, SENSOR);
+  pinMode(sensor.security1, SENSOR);
+  pinMode(sensor.security2, SENSOR);
+  pinMode(sensor.security3, SENSOR);
+
+  // OTHER
+  pinMode(general.out, OUT);
+  pinMode(dater.out, OUT);
+  pinMode(feeder.out, OUT);
+
+  // Start as OFF
+  digitalWrite(general.out, OFF);
+  digitalWrite(dater.out, OFF);
+  digitalWrite(feeder.out, OFF);
 }
 
 void loop() {
-  Seguranca();
-  StandBy();
+  if (modes.status(ALARM)) {
+    // Turn a led ON?
+    // Turn everything else OFF
+    // Put Arduino to sleep.
+  } else if (modes.status(WARMUP)) {
+    delay(3000);
+    modes.set(STANDBY);
+  } else if (modes.status(STANDBY)) {
+    // Buttons work.
+    updateAll();
+    digitalWrite(feeder.out, feeder.button.state());
+    if (general.button.status() == true) {
+      modes.set(STARTING);
+    }
+  } else if (modes.status(STARTING)) {
+    digitalWrite(feeder.out, OFF);
+    digitalWrite(feeder.out, ON);
+
+    // 3 empty cycles.
+    updateAll();
+  } else if (modes.status(PRODUCTION)) {
+    // Normal production.
+    updateAll();
+  } else if (modes.status(STOPPING)) {
+    // Shutting down.
+    updateAll();
+  } else if (modes.status(COOLDOWN)) {
+    // Not needed yet.
+  } else if (modes.status(MAINTENANCE)) {
+    // Manually control things.
+    // Check everything.
+    Serial.begin(9600); // TODO: Put inside a conditional
+  }
+}
+
+/*void setButtons() {
+  OnePush buttonStarter(22, INPUT_PULLUP);
+  OnePush buttonDater(24, INPUT_PULLUP);
+  OnePush feeder.button(feeder.in, INPUT_PULLUP);
+}*/
+
+void updateAll() {
+  cycle.update();
+  general.button.update();
+  dater.button.update();
+  feeder.button.update();
 }
