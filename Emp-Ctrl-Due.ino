@@ -23,7 +23,7 @@
 
 #define IN     INPUT_PULLUP  // INPUT or INPUT_PULLUP
 #define BUTTON INPUT_PULLUP  // INPUT or INPUT_PULLUP
-#define SENSOR INPUT_PULLUP        // INPUT or INPUT_PULLUP
+#define SENSOR INPUT_PULLUP  // INPUT or INPUT_PULLUP
 #define OUT    OUTPUT
 #define ON     HIGH
 #define OFF    LOW
@@ -45,14 +45,32 @@ void setup() {
   pinMode(sensor.security3, SENSOR);
 
   // OTHER
+  pinMode(vWelder.out, OUT);
+  pinMode(hWelder.out, OUT);
+  pinMode(dWelder.out, OUT);
   pinMode(general.out, OUT);
-  pinMode(dater.out, OUT);
   pinMode(feeder.out, OUT);
+  pinMode(dater.out, OUT);
+  pinMode(dater.led, OUT);
+  pinMode(jaw.out, OUT);
+  pinMode(photocell.out, OUT);
+  pinMode(knife.out, OUT);
+  pinMode(cooler.out, OUT);
+  pinMode(welders.out, OUT);
 
-  // Start as OFF
+  // Shut OFF at startup
+  digitalWrite(vWelder.out, OFF);
+  digitalWrite(hWelder.out, OFF);
+  digitalWrite(dWelder.out, OFF);
   digitalWrite(general.out, OFF);
-  digitalWrite(dater.out, OFF);
   digitalWrite(feeder.out, OFF);
+  digitalWrite(dater.out, OFF);
+  digitalWrite(dater.led, OFF);
+  digitalWrite(jaw.out, OFF);
+  digitalWrite(photocell.out, OFF);
+  digitalWrite(knife.out, OFF);
+  digitalWrite(cooler.out, OFF);
+  digitalWrite(welders.out, OFF);
 }
 
 void loop() {
@@ -65,30 +83,46 @@ void loop() {
     modes.set(STANDBY);
   } else if (modes.status(STANDBY)) {
     // Buttons work.
-    updateAll();
+    /*general.button.update(); // Updates general button.
+    feeder.button.update(); // Updates feeder button.*/
     digitalWrite(feeder.out, feeder.button.state());
     digitalWrite(general.out, general.button.state());
-    if (digitalRead(general.out) == ON) {
-      modes.set(STARTING);
+    if (digitalRead(general.out) == ON) { // If general is ON:
+      modes.set(STARTING); // Change to Starting mode.
     }
   } else if (modes.status(STARTING)) {
     // 3 empty cycles.
-    updateAll();
-    if (digitalRead(feeder.out) == ON) {
-      feeder.button.next();
-      /*digitalWrite(feeder.out, OFF);*/
-      digitalWrite(general.out, general.button.state());
+    cycle.start(); // Starts the cycle clock, if not started yet.
+    cycle.update(); // Updates the cycle clock.
+    general.button.update(); // Updates general button.
+    if (digitalRead(feeder.out) == ON) { // If the feeder is ON:
+      feeder.button.next(); // Simulate button press and.
+      digitalWrite(feeder.out, feeder.button.state()); // Turn the feeder OFF.
     }
-    digitalWrite(general.out, general.button.state());
-    if (digitalRead(general.out) == OFF) {
-      modes.set(STANDBY);
+    digitalWrite(general.out, general.button.state()); // Turns general ON.
+    if (digitalRead(general.out) == OFF) { // If general button is pressed.
+      cycle.stop();
+      modes.set(STANDBY); // Shuts down again and changes to Starting mode.
+    }
+    if (digitalRead(sensor.reset) == ON) { // If reset sensor is pressed.
+      cycle.reset(); // Resets the cycle;
+    }
+    if (cycle.cycles() >= 3) { // If 3 or more cycles were completed:
+      modes.set(PRODUCTION); // Changes to Prodution mode.
     }
   } else if (modes.status(PRODUCTION)) {
     // Normal production.
-    updateAll();
+    digitalWrite(feeder.out, feeder.button.state());
+    digitalWrite(dater.led, dater.button.state());
+    Schedule(dater);
+    Schedule(welders);
+    Schedule(jaw);
+    Schedule(photocell);
+    Schedule(knife);
+    Schedule(cooler);
+    Schedule(welders);
   } else if (modes.status(STOPPING)) {
     // Shutting down.
-    updateAll();
   } else if (modes.status(COOLDOWN)) {
     // Not needed yet.
   } else if (modes.status(MAINTENANCE)) {
@@ -100,7 +134,14 @@ void loop() {
 
 void updateAll() {
   cycle.update();
-  general.button.update();
-  dater.button.update();
-  feeder.button.update();
+  general.button.update(); // Updates general button.
+}
+
+void Schedule(struct function f) {
+  unsigned long start, stop;
+  if (BETWEEN(cycle.now(), f.start, f.stop) && f.lock == false) {
+    digitalWrite(f.out, ON);
+  } else {
+    digitalWrite(f.out, OFF);
+  }
 }

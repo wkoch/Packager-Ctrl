@@ -16,15 +16,8 @@ struct pwm {
 
 struct function {
   String name;
-  byte in, out;
-  unsigned long start, stop;
-  boolean lock;
-};
-
-struct function_b { // With a button.
-  String name;
   OnePush button;
-  byte in, out;
+  byte in, out, led;
   unsigned long start, stop;
   boolean lock;
 };
@@ -61,33 +54,36 @@ struct pwm dWelder {
 
 // PRODUCTION FUNCTIONS
 // GENERAL
-struct function_b general {
+struct function general {
    .name = "General",
  .button = OnePush(general.in),
      .in = 22,
     .out = 23,
-  .start = 0,
-   .stop = 0,
+    .led = NULL,
+  .start = NULL,
+   .stop = NULL,
    .lock = false
 };
 
 // FEEDER
-struct function_b feeder {
+struct function feeder {
    .name = "Feeder",
  .button = OnePush(feeder.in),
      .in = 24,
     .out = 25,
-  .start = 0,
-   .stop = 0,
+    .led = NULL,
+  .start = NULL,
+   .stop = NULL,
    .lock = false
 };
 
 // DATER
-struct function_b dater {
+struct function dater {
    .name = "Dater",
  .button = OnePush(dater.in),
      .in = 26,
     .out = 46,
+    .led = 27,
   .start = 0,
    .stop = 400,
    .lock = false
@@ -96,8 +92,10 @@ struct function_b dater {
 // JAW
 struct function jaw {
    .name = "Jaw",
-     .in = 0,
+ .button = NULL,
+     .in = NULL,
     .out = 40,
+    .led = NULL,
   .start = 550,
    .stop = 1500,
    .lock = false
@@ -106,8 +104,10 @@ struct function jaw {
 // PHOTOCELL
 struct function photocell {
    .name = "Photocell",
+ .button = NULL,
      .in = 6,
-    .out = 0,
+    .out = NULL,
+    .led = NULL,
   .start = 1250,
    .stop = 1400,
    .lock = false
@@ -116,8 +116,10 @@ struct function photocell {
 // KNIFE
 struct function knife {
    .name = "Knife",
-     .in = 2,
+ .button = NULL,
+     .in = NULL,
     .out = 42,
+    .led = NULL,
   .start = 600,
    .stop = 800,
    .lock = false
@@ -126,8 +128,10 @@ struct function knife {
 // COOLER
 struct function cooler {
    .name = "Cooler",
-     .in = 44,
-    .out = 45,
+ .button = NULL,
+     .in = NULL,
+    .out = 44,
+    .led = NULL,
   .start = 800,
    .stop = 1450,
    .lock = false
@@ -136,8 +140,10 @@ struct function cooler {
 // WELDERS
 struct function welders {
    .name = "Welders",
-     .in = 48,
-    .out = 49,
+ .button = NULL,
+     .in = NULL,
+    .out = 48,
+    .led = NULL,
   .start = 0,
    .stop = 400,
    .lock = false
