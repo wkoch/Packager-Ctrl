@@ -30,7 +30,7 @@
 #define BETWEEN(x, a, b)  ((a) <= (x) && (x) <= (b))
 
 Modus modes(7);
-Cyclic cycle(2000, 900);
+Cyclic cycle(5000, 900);
 
 void setup() {
   // BUTTONS
@@ -75,6 +75,9 @@ void setup() {
 
 void loop() {
   if (modes.status(ALARM)) {
+    cycle.stop();
+    lockAll();
+    allOFF();
     // Turn a led ON?
     // Turn everything else OFF
     // Put Arduino to sleep.
@@ -132,16 +135,44 @@ void loop() {
   }
 }
 
+void lockAll() {
+  vWelder.lock = hWelder.lock = dWelder.lock = true;
+  general.lock = feeder.lock = dater.lock = true;
+  jaw.lock = photocell.lock = knife.lock = true;
+  cooler.lock = welders.lock = true;
+}
+
+void allOFF() {
+  digitalWrite(vWelder.out, OFF);
+  digitalWrite(hWelder.out, OFF);
+  digitalWrite(dWelder.out, OFF);
+  digitalWrite(general.out, OFF);
+  digitalWrite(feeder.out, OFF);
+  digitalWrite(dater.out, OFF);
+  digitalWrite(jaw.out, OFF);
+  digitalWrite(photocell.out, OFF);
+  digitalWrite(knife.out, OFF);
+  digitalWrite(cooler.out, OFF);
+  digitalWrite(welders.out, OFF);
+}
+
 void updateAll() {
   cycle.update();
   general.button.update(); // Updates general button.
 }
 
 void Schedule(struct function f) {
-  unsigned long start, stop;
-  if (BETWEEN(cycle.now(), f.start, f.stop) && f.lock == false) {
-    digitalWrite(f.out, ON);
-  } else {
-    digitalWrite(f.out, OFF);
+  unsigned long start;
+  f.start == 0 ? start = 0 : start = (f.start * cycle.last()) / 1500;
+  unsigned long stop;
+  f.stop == 0 ? stop = 0 : stop = (f.stop * cycle.last()) / 1500;
+  if (f.lock == true) { // Locked function
+    if (digitalRead(f.out) == ON) { digitalWrite(f.out, OFF); }
+  } else { // Unlocked function.
+    if (start < stop && BETWEEN(cycle.now(), start, stop)) {
+      digitalWrite(f.out, ON);
+    } else if (start > stop && !BETWEEN(cycle.now(), stop, start)) {
+      digitalWrite(f.out, ON);
+    } else { if (digitalRead(f.out) == ON) { digitalWrite(f.out, OFF); } }
   }
 }

@@ -12,6 +12,7 @@ struct pwm {
   String name;
   unsigned long cycle;
   byte in, out;
+  boolean lock;
 };
 
 struct function {
@@ -33,7 +34,8 @@ struct pwm vWelder {
    .name = "Vertical Welder",
   .cycle = 1000,
      .in = A0,
-    .out = 33
+    .out = 33,
+   .lock = false
 };
 
 // HORIZONTAL WELDER PWM
@@ -41,7 +43,8 @@ struct pwm hWelder {
    .name = "Horizontal Welder",
   .cycle = 1000,
      .in = A1,
-    .out = 35
+    .out = 35,
+   .lock = false
 };
 
 // DATER WELDER PWM
@@ -49,7 +52,8 @@ struct pwm dWelder {
    .name = "Dater Welder",
   .cycle = 1000,
      .in = A2,
-    .out = 37
+    .out = 37,
+   .lock = false
 };
 
 // PRODUCTION FUNCTIONS
@@ -85,7 +89,7 @@ struct function dater {
     .out = 46,
     .led = 27,
   .start = 0,
-   .stop = 400,
+   .stop = 500,
    .lock = false
 };
 
