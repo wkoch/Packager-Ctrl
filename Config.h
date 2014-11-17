@@ -24,7 +24,7 @@ struct function {
 };
 
 struct sensors {
-  byte reset, photocell, security1, security2, security3;
+  byte reset, photocell, jaw, security1, security2, security3;
 };
 
 
@@ -157,7 +157,8 @@ struct function welder {
 struct sensors sensor {
       .reset = 28,
   .photocell = photocell.in,
-  .security1 = 2,
+        .jaw = 2,
+  .security1 = 32,
   .security2 = 34,
   .security3 = 36
 };

@@ -74,6 +74,7 @@ void setup() {
 }
 
 void loop() {
+  security();
   if (modes.status(ALARM)) {
     cycle.stop();
     lockAll();
@@ -133,6 +134,14 @@ void loop() {
   }
 }
 
+boolean isON(byte pin) {
+  if (digitalRead(pin) == ON) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 void reset() {
   if (digitalRead(sensor.reset) == !ON) { // If reset sensor is pressed.
     cycle.reset(); // Resets the cycle;
@@ -173,17 +182,29 @@ void Schedule(struct function f) {
     if (digitalRead(f.out) == ON) { digitalWrite(f.out, OFF); }
   } else { // Unlocked function.
     if (start < stop && BETWEEN(cycle.now(), start, stop)) {
-      if (f.name == knife.name) { knifeSecurity(); }
+      if (f.name == knife.name) { knifeSecurity(); } // Before knife is ON.
       digitalWrite(f.out, ON);
     } else if (start > stop && !BETWEEN(cycle.now(), stop, start)) {
-      if (f.name == knife.name) { knifeSecurity(); }
+      if (f.name == knife.name) { knifeSecurity(); } // Before knife is ON.
       digitalWrite(f.out, ON);
     } else { if (digitalRead(f.out) == ON) { digitalWrite(f.out, OFF); } }
   }
 }
 
+void security() {
+  byte s1, s2, s3;
+  s1 = isON(sensor.security1);
+  s2 = isON(sensor.security2);
+  s3 = isON(sensor.security3);
+  if (!s1 || !s2 || !s3) {
+    if (modes.mode() != ALARM) {
+      modes.set(ALARM);
+    }
+  }
+}
+
 void knifeSecurity() {
-  if (digitalRead(sensor.security1) == ON && digitalRead(jaw.out) == ON) {
+  if (digitalRead(sensor.jaw) == ON && digitalRead(jaw.out) == ON) {
     modes.set(ALARM);
   }
 }
