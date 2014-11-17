@@ -56,7 +56,7 @@ void setup() {
   pinMode(photocell.out, OUT);
   pinMode(knife.out, OUT);
   pinMode(cooler.out, OUT);
-  pinMode(welders.out, OUT);
+  pinMode(welder.out, OUT);
 
   // Shut OFF at startup
   digitalWrite(vWelder.out, OFF);
@@ -70,7 +70,7 @@ void setup() {
   digitalWrite(photocell.out, OFF);
   digitalWrite(knife.out, OFF);
   digitalWrite(cooler.out, OFF);
-  digitalWrite(welders.out, OFF);
+  digitalWrite(welder.out, OFF);
 }
 
 void loop() {
@@ -107,9 +107,7 @@ void loop() {
       cycle.stop();
       modes.set(STANDBY); // Shuts down again and changes to Starting mode.
     }
-    if (digitalRead(sensor.reset) == ON) { // If reset sensor is pressed.
-      cycle.reset(); // Resets the cycle;
-    }
+    reset();
     if (cycle.cycles() >= 3) { // If 3 or more cycles were completed:
       modes.set(PRODUCTION); // Changes to Prodution mode.
     }
@@ -118,12 +116,12 @@ void loop() {
     digitalWrite(feeder.out, feeder.button.state());
     digitalWrite(dater.led, dater.button.state());
     Schedule(dater);
-    Schedule(welders);
     Schedule(jaw);
     Schedule(photocell);
     Schedule(knife);
     Schedule(cooler);
-    Schedule(welders);
+    Schedule(welder);
+    reset();
   } else if (modes.status(STOPPING)) {
     // Shutting down.
   } else if (modes.status(COOLDOWN)) {
@@ -135,11 +133,16 @@ void loop() {
   }
 }
 
+void reset() {
+  if (digitalRead(sensor.reset) == !ON) { // If reset sensor is pressed.
+    cycle.reset(); // Resets the cycle;
+  }
+}
+
 void lockAll() {
-  vWelder.lock = hWelder.lock = dWelder.lock = true;
-  general.lock = feeder.lock = dater.lock = true;
-  jaw.lock = photocell.lock = knife.lock = true;
-  cooler.lock = welders.lock = true;
+  vWelder.lock = hWelder.lock = dWelder.lock = general.lock = feeder.lock =
+  dater.lock = jaw.lock = photocell.lock = knife.lock = cooler.lock =
+  welder.lock = true;
 }
 
 void allOFF() {
@@ -153,7 +156,7 @@ void allOFF() {
   digitalWrite(photocell.out, OFF);
   digitalWrite(knife.out, OFF);
   digitalWrite(cooler.out, OFF);
-  digitalWrite(welders.out, OFF);
+  digitalWrite(welder.out, OFF);
 }
 
 void updateAll() {
@@ -170,9 +173,17 @@ void Schedule(struct function f) {
     if (digitalRead(f.out) == ON) { digitalWrite(f.out, OFF); }
   } else { // Unlocked function.
     if (start < stop && BETWEEN(cycle.now(), start, stop)) {
+      if (f.name == knife.name) { knifeSecurity(); }
       digitalWrite(f.out, ON);
     } else if (start > stop && !BETWEEN(cycle.now(), stop, start)) {
+      if (f.name == knife.name) { knifeSecurity(); }
       digitalWrite(f.out, ON);
     } else { if (digitalRead(f.out) == ON) { digitalWrite(f.out, OFF); } }
+  }
+}
+
+void knifeSecurity() {
+  if (digitalRead(sensor.security1) == ON && digitalRead(jaw.out) == ON) {
+    modes.set(ALARM);
   }
 }

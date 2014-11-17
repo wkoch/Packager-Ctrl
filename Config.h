@@ -142,8 +142,8 @@ struct function cooler {
 };
 
 // WELDERS
-struct function welders {
-   .name = "Welders",
+struct function welder {
+   .name = "Welder",
  .button = NULL,
      .in = NULL,
     .out = 48,
@@ -155,9 +155,9 @@ struct function welders {
 
 // SENSORS
 struct sensors sensor {
-      .reset = 2,
+      .reset = 28,
   .photocell = photocell.in,
-  .security1 = 32,
+  .security1 = 2,
   .security2 = 34,
   .security3 = 36
 };
