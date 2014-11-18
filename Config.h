@@ -10,6 +10,7 @@
 
 struct pwm {
   String name;
+  SlowPWM pwm;
   unsigned long cycle;
   byte in, out;
   boolean lock;
@@ -32,6 +33,7 @@ struct sensors {
 // VERTICAL WELDER PWM
 struct pwm vWelder {
    .name = "Vertical Welder",
+    .pwm = SlowPWM(vWelder.cycle, vWelder.in, vWelder.out),
   .cycle = 1000,
      .in = A0,
     .out = 33,
@@ -41,6 +43,7 @@ struct pwm vWelder {
 // HORIZONTAL WELDER PWM
 struct pwm hWelder {
    .name = "Horizontal Welder",
+    .pwm = SlowPWM(hWelder.cycle, hWelder.in, hWelder.out),
   .cycle = 1000,
      .in = A1,
     .out = 35,
@@ -50,6 +53,7 @@ struct pwm hWelder {
 // DATER WELDER PWM
 struct pwm dWelder {
    .name = "Dater Welder",
+    .pwm = SlowPWM(dWelder.cycle, dWelder.in, dWelder.out),
   .cycle = 1000,
      .in = A2,
     .out = 37,

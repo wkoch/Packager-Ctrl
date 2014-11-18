@@ -9,6 +9,7 @@
 #include <Debounce.h>
 #include <OnePush.h>
 #include <Cyclic.h>
+#include <SlowPWM.h>
 #include "Config.h"
 
 // Operation Modes
@@ -30,7 +31,7 @@
 #define BETWEEN(x, a, b)  ((a) <= (x) && (x) <= (b))
 
 Modus modes(7);
-Cyclic cycle(5000, 900);
+Cyclic cycle(2000, 900);
 
 void setup() {
   // BUTTONS
@@ -59,18 +60,7 @@ void setup() {
   pinMode(welder.out, OUT);
 
   // Shut OFF at startup
-  digitalWrite(vWelder.out, OFF);
-  digitalWrite(hWelder.out, OFF);
-  digitalWrite(dWelder.out, OFF);
-  digitalWrite(general.out, OFF);
-  digitalWrite(feeder.out, OFF);
-  digitalWrite(dater.out, OFF);
-  digitalWrite(dater.led, OFF);
-  digitalWrite(jaw.out, OFF);
-  digitalWrite(photocell.out, OFF);
-  digitalWrite(knife.out, OFF);
-  digitalWrite(cooler.out, OFF);
-  digitalWrite(welder.out, OFF);
+  allOFF();
 }
 
 void loop() {
@@ -83,22 +73,27 @@ void loop() {
     // Turn everything else OFF
     // Put Arduino to sleep.
   } else if (modes.status(WARMUP)) {
+    lockAll();
+    allOFF();
     delay(3000);
     modes.set(STANDBY);
   } else if (modes.status(STANDBY)) {
+    lockAll();
+    allOFF();
     // Buttons work.
-    /*general.button.update(); // Updates general button.
-    feeder.button.update(); // Updates feeder button.*/
     digitalWrite(feeder.out, feeder.button.state());
     digitalWrite(general.out, general.button.state());
     if (digitalRead(general.out) == ON) { // If general is ON:
+      unlockAll();
       modes.set(STARTING); // Change to Starting mode.
     }
   } else if (modes.status(STARTING)) {
     // 3 empty cycles.
     cycle.start(); // Starts the cycle clock, if not started yet.
     cycle.update(); // Updates the cycle clock.
-    general.button.update(); // Updates general button.
+    vWelder.pwm.on();
+    hWelder.pwm.on();
+    dWelder.pwm.on();
     if (digitalRead(feeder.out) == ON) { // If the feeder is ON:
       feeder.button.next(); // Simulate button press and.
       digitalWrite(feeder.out, feeder.button.state()); // Turn the feeder OFF.
@@ -116,6 +111,9 @@ void loop() {
     // Normal production.
     digitalWrite(feeder.out, feeder.button.state());
     digitalWrite(dater.led, dater.button.state());
+    vWelder.pwm.update();
+    hWelder.pwm.update();
+    dWelder.pwm.update();
     Schedule(dater);
     Schedule(jaw);
     Schedule(photocell);
@@ -123,13 +121,53 @@ void loop() {
     Schedule(cooler);
     Schedule(welder);
     reset();
+    if (cycle.cycles() > 4 && !general.button.status()) { // If general button is pressed.
+      if (digitalRead(feeder.out) == ON) { // If the feeder is ON:
+        feeder.button.next(); // Simulate button press and.
+        digitalWrite(feeder.out, feeder.button.state()); // Turn the feeder OFF.
+      }
+      if (digitalRead(dater.out) == ON) { // If the dater is ON:
+        dater.button.next(); // Simulate button press and.
+        digitalWrite(dater.out, dater.button.state()); // Turn the dater OFF.
+      }
+      modes.set(STOPPING); // Begins soft shutdown.
+    }
   } else if (modes.status(STOPPING)) {
     // Shutting down.
+    vWelder.pwm.update();
+    hWelder.pwm.update();
+    dWelder.pwm.update();
+    if (digitalRead(dater.out) == ON || !dater.lock) {
+      dater.lock = true;
+      digitalWrite(dater.out, OFF);
+    }
+    if (!feeder.lock) {
+      feeder.lock = true;
+      digitalWrite(dater.out, OFF);
+    }
+    Schedule(jaw);
+    Schedule(photocell);
+    Schedule(knife);
+    Schedule(cooler);
+    Schedule(welder);
+    reset();
+    if (cycle.now() > jaw.stop || cycle.now() == 0) {
+      modes.set(COOLDOWN);
+    }
   } else if (modes.status(COOLDOWN)) {
-    // Not needed yet.
+    vWelder.pwm.off();
+    hWelder.pwm.off();
+    dWelder.pwm.off();
+    cycle.stop();
+    allOFF();
+    digitalWrite(cooler.out, ON);
+    delay(1000);
+    digitalWrite(cooler.out, OFF);
+    cycle.reboot(); // Restarts the cycle counter and clock.
+    modes.set(STANDBY);
   } else if (modes.status(MAINTENANCE)) {
     // Manually control things.
-    // Check everything.
+    // Check everything individually.
     Serial.begin(9600); // TODO: Put inside a conditional
   }
 }
@@ -154,13 +192,25 @@ void lockAll() {
   welder.lock = true;
 }
 
+void unlockAll() {
+  vWelder.lock = hWelder.lock = dWelder.lock = general.lock = feeder.lock =
+  dater.lock = jaw.lock = photocell.lock = knife.lock = cooler.lock =
+  welder.lock = false;
+}
+
 void allOFF() {
+  vWelder.pwm.off();
+  hWelder.pwm.off();
+  dWelder.pwm.off();
   digitalWrite(vWelder.out, OFF);
   digitalWrite(hWelder.out, OFF);
   digitalWrite(dWelder.out, OFF);
-  digitalWrite(general.out, OFF);
-  digitalWrite(feeder.out, OFF);
+  if (modes.mode() != STANDBY) {
+    digitalWrite(general.out, OFF);
+    digitalWrite(feeder.out, OFF);
+  }
   digitalWrite(dater.out, OFF);
+  digitalWrite(dater.led, OFF);
   digitalWrite(jaw.out, OFF);
   digitalWrite(photocell.out, OFF);
   digitalWrite(knife.out, OFF);
@@ -170,10 +220,15 @@ void allOFF() {
 
 void updateAll() {
   cycle.update();
-  general.button.update(); // Updates general button.
 }
 
 void Schedule(struct function f) {
+
+  if (digitalRead(dater.led) == ON) {
+    dater.lock = false;
+  } else {
+    dater.lock = true;
+  }
   unsigned long start;
   f.start == 0 ? start = 0 : start = (f.start * cycle.last()) / 1500;
   unsigned long stop;
@@ -196,7 +251,7 @@ void security() {
   s1 = isON(sensor.security1);
   s2 = isON(sensor.security2);
   s3 = isON(sensor.security3);
-  if (!s1 || !s2 || !s3) {
+  if (!s1 || !s2 || !s3) { // Negated because of INPUT_PULLUP.
     if (modes.mode() != ALARM) {
       modes.set(ALARM);
     }
