@@ -29,6 +29,12 @@
 #define ON     HIGH
 #define OFF    LOW
 #define BETWEEN(x, a, b)  ((a) <= (x) && (x) <= (b))
+#define isON(x)           (digitalRead(x) == ON)
+#define isOFF(x)          (digitalRead(x) == OFF)
+#define turnON(x)         if (isOFF(x)) {digitalWrite(x, ON);}
+#define turnOFF(x)        if  (isON(x)) {digitalWrite(x, OFF);}
+#define ButtonState(x)    digitalWrite(x.out, x.button.state())
+#define LedState(x)       digitalWrite(x.led, x.button.state())
 
 Modus modes(7);
 Cyclic cycle(2000, 900);
@@ -81,9 +87,9 @@ void loop() {
     lockAll();
     allOFF();
     // Buttons work.
-    digitalWrite(feeder.out, feeder.button.state());
-    digitalWrite(general.out, general.button.state());
-    if (digitalRead(general.out) == ON) { // If general is ON:
+    ButtonState(feeder);
+    ButtonState(general);
+    if (isON(general.out)) { // If general is ON:
       unlockAll();
       modes.set(STARTING); // Change to Starting mode.
     }
@@ -92,12 +98,12 @@ void loop() {
     cycle.start(); // Starts the cycle clock, if not started yet.
     cycle.update(); // Updates the cycle clock.
     weldersPWM();
-    if (digitalRead(feeder.out) == ON) { // If the feeder is ON:
+    if (isON(feeder.out)) { // If the feeder is ON:
       feeder.button.next(); // Simulate button press and.
-      digitalWrite(feeder.out, feeder.button.state()); // Turn the feeder OFF.
+      ButtonState(feeder); // Turn the feeder OFF.
     }
-    digitalWrite(general.out, general.button.state()); // Turns general ON.
-    if (digitalRead(general.out) == OFF) { // If general button is pressed.
+    ButtonState(general); // Turns general ON.
+    if (isOFF(general.out)) { // If general button is pressed.
       cycle.stop();
       modes.set(STANDBY); // Shuts down again and changes to Starting mode.
     }
@@ -107,8 +113,9 @@ void loop() {
     }
   } else if (modes.status(PRODUCTION)) {
     // Normal production.
-    digitalWrite(feeder.out, feeder.button.state());
-    digitalWrite(dater.led, dater.button.state());
+    ButtonState(feeder);
+    LedState(dater);
+
     weldersPWM();
     Schedule(dater);
     Schedule(jaw);
@@ -118,26 +125,26 @@ void loop() {
     Schedule(welder);
     reset();
     if (cycle.cycles() > 4 && !general.button.status()) { // If general button is pressed.
-      if (digitalRead(feeder.out) == ON) { // If the feeder is ON:
+      if (isON(feeder.out)) { // If the feeder is ON:
         feeder.button.next(); // Simulate button press and.
-        digitalWrite(feeder.out, feeder.button.state()); // Turn the feeder OFF.
+        ButtonState(feeder); // Turn the feeder OFF.
       }
-      if (digitalRead(dater.out) == ON) { // If the dater is ON:
+      if (isON(dater.out)) { // If the dater is ON:
         dater.button.next(); // Simulate button press and.
-        digitalWrite(dater.out, dater.button.state()); // Turn the dater OFF.
+        ButtonState(dater); // Turn the dater OFF.
       }
       modes.set(STOPPING); // Begins soft shutdown.
     }
   } else if (modes.status(STOPPING)) {
     // Shutting down.
     weldersPWM();
-    if (digitalRead(dater.out) == ON || !dater.lock) {
+    if (isON(dater.out) || !dater.lock) {
       dater.lock = true;
-      digitalWrite(dater.out, OFF);
+      turnOFF(dater.out);
     }
     if (!feeder.lock) {
       feeder.lock = true;
-      digitalWrite(dater.out, OFF);
+      turnOFF(dater.out);
     }
     Schedule(jaw);
     Schedule(photocell);
@@ -151,9 +158,9 @@ void loop() {
   } else if (modes.status(COOLDOWN)) {
     cycle.stop();
     allOFF();
-    digitalWrite(cooler.out, ON);
+    turnON(cooler.out);
     delay(1000);
-    digitalWrite(cooler.out, OFF);
+    turnOFF(cooler.out);
     cycle.reboot(); // Restarts the cycle counter and clock.
     modes.set(STANDBY);
   } else if (modes.status(MAINTENANCE)) {
@@ -162,36 +169,6 @@ void loop() {
     Serial.begin(9600); // TODO: Put inside a conditional
   }
 }
-
-// === CUTER FUNCTIONS THAN ARDUINO'S.
-boolean isON(byte pin) {
-  if (digitalRead(pin) == ON) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-boolean isOFF(byte pin) {
-  if (digitalRead(pin) == OFF) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-void turnON(byte pin) {
-  if (isOFF(pin)) {
-    digitalWrite(pin, ON);
-  }
-}
-
-void turnOFF(byte pin) {
-  if (isON(pin)) {
-    digitalWrite(pin, OFF);
-  }
-}
-// ===
 
 void reset() {
   if (isOFF(sensor.reset)) { // If reset sensor is pressed. (PULLUP)
@@ -221,20 +198,20 @@ void allOFF() {
   vWelder.pwm.off();
   hWelder.pwm.off();
   dWelder.pwm.off();
-  digitalWrite(vWelder.out, OFF);
-  digitalWrite(hWelder.out, OFF);
-  digitalWrite(dWelder.out, OFF);
+  turnOFF(vWelder.out);
+  turnOFF(hWelder.out);
+  turnOFF(dWelder.out);
   if (modes.mode() != STANDBY) {
-    digitalWrite(general.out, OFF);
-    digitalWrite(feeder.out, OFF);
-    digitalWrite(dater.out, OFF);
+    turnOFF(general.out);
+    turnOFF(feeder.out);
+    turnOFF(dater.out);
   }
-  digitalWrite(dater.led, OFF);
-  digitalWrite(jaw.out, OFF);
-  digitalWrite(photocell.out, OFF);
-  digitalWrite(knife.out, OFF);
-  digitalWrite(cooler.out, OFF);
-  digitalWrite(welder.out, OFF);
+  turnOFF(dater.led);
+  turnOFF(jaw.out);
+  turnOFF(photocell.out);
+  turnOFF(knife.out);
+  turnOFF(cooler.out);
+  turnOFF(welder.out);
 }
 
 void updateAll() {
@@ -253,15 +230,15 @@ void Schedule(struct function f) {
   unsigned long stop;
   f.stop == 0 ? stop = 0 : stop = (f.stop * cycle.last()) / 1500;
   if (f.lock == true) { // Locked function
-    if (isON(f.out)) { digitalWrite(f.out, OFF); }
+    if (isON(f.out)) { turnOFF(f.out); }
   } else { // Unlocked function.
     if (start < stop && BETWEEN(cycle.now(), start, stop)) {
       if (f.name == knife.name) { knifeSecurity(); } // Before knife is ON.
-      digitalWrite(f.out, ON);
+      turnON(f.out);
     } else if (start > stop && !BETWEEN(cycle.now(), stop, start)) {
       if (f.name == knife.name) { knifeSecurity(); } // Before knife is ON.
-      digitalWrite(f.out, ON);
-    } else { if (isON(f.out)) { digitalWrite(f.out, OFF); } }
+      turnON(f.out);
+    } else { if (isON(f.out)) { turnOFF(f.out); } }
   }
 }
 
@@ -278,7 +255,7 @@ void security() {
 }
 
 void knifeSecurity() {
-  if (digitalRead(sensor.jaw) == ON && digitalRead(jaw.out) == ON) {
+  if (isON(sensor.jaw) && isON(jaw.out)) {
     modes.set(ALARM);
   }
 }
