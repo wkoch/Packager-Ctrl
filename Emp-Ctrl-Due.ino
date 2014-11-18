@@ -22,50 +22,51 @@
 #define MAINTENANCE 6 // Maintenance mode.
 #define ALARM       7 // Alarm mode.
 
-#define IN     INPUT_PULLUP  // INPUT or INPUT_PULLUP
-#define BUTTON INPUT_PULLUP  // INPUT or INPUT_PULLUP
-#define SENSOR INPUT_PULLUP  // INPUT or INPUT_PULLUP
-#define OUT    OUTPUT
-#define ON     HIGH
-#define OFF    LOW
+#define      ON            HIGH
+#define     OFF            LOW
+#define      IN(x)         pinMode(x, INPUT_PULLUP)
+#define  BUTTON(x)         pinMode(x, INPUT_PULLUP)
+#define  SENSOR(x)         pinMode(x, INPUT_PULLUP)
+#define     OUT(x)         pinMode(x, OUTPUT)
 #define BETWEEN(x, a, b)  ((a) <= (x) && (x) <= (b))
-#define isON(x)           (digitalRead(x) == ON)
-#define isOFF(x)          (digitalRead(x) == OFF)
-#define turnON(x)         if (isOFF(x)) {digitalWrite(x, ON);}
+#define    isON(x)        (digitalRead(x) == ON)
+#define   isOFF(x)        (digitalRead(x) == OFF)
+#define  turnON(x)        if (isOFF(x)) {digitalWrite(x, ON);}
 #define turnOFF(x)        if  (isON(x)) {digitalWrite(x, OFF);}
 #define ButtonState(x)    digitalWrite(x.out, x.button.state())
-#define LedState(x)       digitalWrite(x.led, x.button.state())
+#define    LedState(x)    digitalWrite(x.led, x.button.state())
 
 Modus modes(7);
 Cyclic cycle(2000, 900);
 
 void setup() {
   // BUTTONS
-  pinMode(general.in, BUTTON);
-  pinMode(dater.in, BUTTON);
-  pinMode(feeder.in, BUTTON);
+  BUTTON(general.in);
+  BUTTON(dater.in);
+  BUTTON(feeder.in);
   // SENSORS
-  pinMode(sensor.reset, SENSOR);
-  pinMode(sensor.photocell, SENSOR);
-  pinMode(sensor.security1, SENSOR);
-  pinMode(sensor.security2, SENSOR);
-  pinMode(sensor.security3, SENSOR);
+  SENSOR(sensor.reset);
+  SENSOR(sensor.photocell);
+  SENSOR(sensor.jaw);
+  SENSOR(sensor.security1);
+  SENSOR(sensor.security2);
+  SENSOR(sensor.security3);
 
-  // OTHER
-  pinMode(vWelder.out, OUT);
-  pinMode(hWelder.out, OUT);
-  pinMode(dWelder.out, OUT);
-  pinMode(general.out, OUT);
-  pinMode(feeder.out, OUT);
-  pinMode(dater.out, OUT);
-  pinMode(dater.led, OUT);
-  pinMode(jaw.out, OUT);
-  pinMode(photocell.out, OUT);
-  pinMode(knife.out, OUT);
-  pinMode(cooler.out, OUT);
-  pinMode(welder.out, OUT);
+  // OUTPUTS
+  OUT(vWelder.out);
+  OUT(hWelder.out);
+  OUT(dWelder.out);
+  OUT(general.out);
+  OUT(feeder.out);
+  OUT(dater.out);
+  OUT(dater.led);
+  OUT(jaw.out);
+  OUT(photocell.out);
+  OUT(knife.out);
+  OUT(cooler.out);
+  OUT(welder.out);
 
-  // Shut OFF at startup
+  // Shut all outputs OFF at startup
   allOFF();
 }
 
@@ -75,9 +76,6 @@ void loop() {
     cycle.stop();
     lockAll();
     allOFF();
-    // Turn a led ON?
-    // Turn everything else OFF
-    // Put Arduino to sleep.
   } else if (modes.status(WARMUP)) {
     lockAll();
     allOFF();
@@ -124,13 +122,13 @@ void loop() {
     Schedule(cooler);
     Schedule(welder);
     reset();
-    if (cycle.cycles() > 4 && !general.button.status()) { // If general button is pressed.
+    if (cycle.cycles() > 4 && !general.button.status()) {
       if (isON(feeder.out)) { // If the feeder is ON:
-        feeder.button.next(); // Simulate button press and.
+        feeder.button.next(); // Simulate button press and
         ButtonState(feeder); // Turn the feeder OFF.
       }
       if (isON(dater.out)) { // If the dater is ON:
-        dater.button.next(); // Simulate button press and.
+        dater.button.next(); // Simulate button press and
         ButtonState(dater); // Turn the dater OFF.
       }
       modes.set(STOPPING); // Begins soft shutdown.
@@ -170,11 +168,8 @@ void loop() {
   }
 }
 
-void reset() {
-  if (isOFF(sensor.reset)) { // If reset sensor is pressed. (PULLUP)
-    cycle.reset(); // Resets the cycle;
-  }
-}
+
+void reset() { if (isOFF(sensor.reset)) { cycle.reset(); } }
 
 void weldersPWM() {
   !vWelder.lock ? vWelder.pwm.on() : vWelder.pwm.off();
@@ -201,12 +196,12 @@ void allOFF() {
   turnOFF(vWelder.out);
   turnOFF(hWelder.out);
   turnOFF(dWelder.out);
-  if (modes.mode() != STANDBY) {
+  if (!modes.status(STANDBY)) {
     turnOFF(general.out);
     turnOFF(feeder.out);
-    turnOFF(dater.out);
+    turnOFF(dater.led);
   }
-  turnOFF(dater.led);
+  turnOFF(dater.out);
   turnOFF(jaw.out);
   turnOFF(photocell.out);
   turnOFF(knife.out);
@@ -214,22 +209,15 @@ void allOFF() {
   turnOFF(welder.out);
 }
 
-void updateAll() {
-  cycle.update();
-}
+void updateAll() { cycle.update(); }
 
 void Schedule(struct function f) {
-
-  if (isON(dater.led)) {
-    dater.lock = false;
-  } else {
-    dater.lock = true;
-  }
+  isON(dater.led) ? dater.lock = false : dater.lock = true;
   unsigned long start;
-  f.start == 0 ? start = 0 : start = (f.start * cycle.last()) / 1500;
+  f.start == 0 ? start = 0 : start = (f.start * cycle.last()) / jaw.stop;
   unsigned long stop;
-  f.stop == 0 ? stop = 0 : stop = (f.stop * cycle.last()) / 1500;
-  if (f.lock == true) { // Locked function
+  f.stop == 0 ? stop = 0 : stop = (f.stop * cycle.last()) / jaw.stop;
+  if (f.lock) { // Locked function?
     if (isON(f.out)) { turnOFF(f.out); }
   } else { // Unlocked function.
     if (start < stop && BETWEEN(cycle.now(), start, stop)) {
@@ -243,19 +231,14 @@ void Schedule(struct function f) {
 }
 
 void security() {
-  byte s1, s2, s3;
-  s1 = isON(sensor.security1);
-  s2 = isON(sensor.security2);
-  s3 = isON(sensor.security3);
+  byte s1 = isON(sensor.security1);
+  byte s2 = isON(sensor.security2);
+  byte s3 = isON(sensor.security3);
   if (!s1 || !s2 || !s3) { // Negated because of INPUT_PULLUP.
-    if (modes.mode() != ALARM) {
-      modes.set(ALARM);
-    }
+    if (!modes.status(ALARM)) { modes.set(ALARM); }
   }
 }
 
 void knifeSecurity() {
-  if (isON(sensor.jaw) && isON(jaw.out)) {
-    modes.set(ALARM);
-  }
+  if (isON(sensor.jaw) && isON(jaw.out)) { modes.set(ALARM); }
 }
