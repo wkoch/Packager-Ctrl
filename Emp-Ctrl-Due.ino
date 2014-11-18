@@ -91,9 +91,7 @@ void loop() {
     // 3 empty cycles.
     cycle.start(); // Starts the cycle clock, if not started yet.
     cycle.update(); // Updates the cycle clock.
-    vWelder.pwm.on();
-    hWelder.pwm.on();
-    dWelder.pwm.on();
+    weldersPWM();
     if (digitalRead(feeder.out) == ON) { // If the feeder is ON:
       feeder.button.next(); // Simulate button press and.
       digitalWrite(feeder.out, feeder.button.state()); // Turn the feeder OFF.
@@ -111,9 +109,7 @@ void loop() {
     // Normal production.
     digitalWrite(feeder.out, feeder.button.state());
     digitalWrite(dater.led, dater.button.state());
-    vWelder.pwm.update();
-    hWelder.pwm.update();
-    dWelder.pwm.update();
+    weldersPWM();
     Schedule(dater);
     Schedule(jaw);
     Schedule(photocell);
@@ -134,9 +130,7 @@ void loop() {
     }
   } else if (modes.status(STOPPING)) {
     // Shutting down.
-    vWelder.pwm.update();
-    hWelder.pwm.update();
-    dWelder.pwm.update();
+    weldersPWM();
     if (digitalRead(dater.out) == ON || !dater.lock) {
       dater.lock = true;
       digitalWrite(dater.out, OFF);
@@ -155,9 +149,6 @@ void loop() {
       modes.set(COOLDOWN);
     }
   } else if (modes.status(COOLDOWN)) {
-    vWelder.pwm.off();
-    hWelder.pwm.off();
-    dWelder.pwm.off();
     cycle.stop();
     allOFF();
     digitalWrite(cooler.out, ON);
@@ -172,6 +163,7 @@ void loop() {
   }
 }
 
+// === CUTER FUNCTIONS THAN ARDUINO'S.
 boolean isON(byte pin) {
   if (digitalRead(pin) == ON) {
     return true;
@@ -180,10 +172,37 @@ boolean isON(byte pin) {
   }
 }
 
+boolean isOFF(byte pin) {
+  if (digitalRead(pin) == OFF) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+void turnON(byte pin) {
+  if (isOFF(pin)) {
+    digitalWrite(pin, ON);
+  }
+}
+
+void turnOFF(byte pin) {
+  if (isON(pin)) {
+    digitalWrite(pin, OFF);
+  }
+}
+// ===
+
 void reset() {
-  if (digitalRead(sensor.reset) == !ON) { // If reset sensor is pressed.
+  if (isOFF(sensor.reset)) { // If reset sensor is pressed. (PULLUP)
     cycle.reset(); // Resets the cycle;
   }
+}
+
+void weldersPWM() {
+  !vWelder.lock ? vWelder.pwm.on() : vWelder.pwm.off();
+  !hWelder.lock ? hWelder.pwm.on() : hWelder.pwm.off();
+  !dWelder.lock ? dWelder.pwm.on() : dWelder.pwm.off();
 }
 
 void lockAll() {
@@ -208,8 +227,8 @@ void allOFF() {
   if (modes.mode() != STANDBY) {
     digitalWrite(general.out, OFF);
     digitalWrite(feeder.out, OFF);
+    digitalWrite(dater.out, OFF);
   }
-  digitalWrite(dater.out, OFF);
   digitalWrite(dater.led, OFF);
   digitalWrite(jaw.out, OFF);
   digitalWrite(photocell.out, OFF);
@@ -224,7 +243,7 @@ void updateAll() {
 
 void Schedule(struct function f) {
 
-  if (digitalRead(dater.led) == ON) {
+  if (isON(dater.led)) {
     dater.lock = false;
   } else {
     dater.lock = true;
@@ -234,7 +253,7 @@ void Schedule(struct function f) {
   unsigned long stop;
   f.stop == 0 ? stop = 0 : stop = (f.stop * cycle.last()) / 1500;
   if (f.lock == true) { // Locked function
-    if (digitalRead(f.out) == ON) { digitalWrite(f.out, OFF); }
+    if (isON(f.out)) { digitalWrite(f.out, OFF); }
   } else { // Unlocked function.
     if (start < stop && BETWEEN(cycle.now(), start, stop)) {
       if (f.name == knife.name) { knifeSecurity(); } // Before knife is ON.
@@ -242,7 +261,7 @@ void Schedule(struct function f) {
     } else if (start > stop && !BETWEEN(cycle.now(), stop, start)) {
       if (f.name == knife.name) { knifeSecurity(); } // Before knife is ON.
       digitalWrite(f.out, ON);
-    } else { if (digitalRead(f.out) == ON) { digitalWrite(f.out, OFF); } }
+    } else { if (isON(f.out)) { digitalWrite(f.out, OFF); } }
   }
 }
 
