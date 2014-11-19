@@ -1,5 +1,5 @@
 /*
-  Emp-Ctrl-Due - v2.0a - 14/11/2014
+  Packager-Ctrl - v2.0 - 19/11/2014
   Arduino Due application for packaging machine automation.
   Created by William Koch.
   Released into the public domain.
@@ -13,12 +13,12 @@
 #include "Config.h"
 
 // Operation Modes
-#define WARMUP      0 // Warm-up, a few seconds of delay.
-#define STANDBY     1 // Some buttons are working.
-#define STARTING    2 // 3 empty cycles.
-#define PRODUCTION  3 //
-#define STOPPING    4 // Finishs current cycle, empties the machine and stops.
-#define COOLDOWN    5 //
+#define WARMUP      0 // Warm-up, a few seconds of delay before Stand-by.
+#define STANDBY     1 // Buttons are working.
+#define STARTING    2 // Does 3 empty cycles.
+#define PRODUCTION  3 // Normal (continuous) production.
+#define STOPPING    4 // Finishs current cycle and empties the machine.
+#define COOLDOWN    5 // Stops and goes back to Warm-up.
 #define MAINTENANCE 6 // Maintenance mode.
 #define ALARM       7 // Alarm mode.
 
@@ -34,6 +34,7 @@
 #define  turnON(x)        if (isOFF(x)) {digitalWrite(x, ON);}
 #define turnOFF(x)        if  (isON(x)) {digitalWrite(x, OFF);}
 #define  UNLOCK(x)        if   (x.lock) {x.lock = false;}
+#define    LOCK(x)        if  (!x.lock) {x.lock = true;}
 #define ButtonState(x)    if (!x.lock) {digitalWrite(x.out, x.button.state());}
 #define    LedState(x)    digitalWrite(x.led, x.button.state())
 
@@ -52,7 +53,6 @@ void setup() {
   SENSOR(sensor.security1);
   SENSOR(sensor.security2);
   SENSOR(sensor.security3);
-
   // OUTPUTS
   OUT(vWelder.out);
   OUT(hWelder.out);
@@ -65,31 +65,31 @@ void setup() {
   OUT(knife.out);
   OUT(cooler.out);
   OUT(welder.out);
-
   // Shut all outputs OFF at startup
   allOFF();
 }
 
 void loop() {
-  security();
-  if (modes.status(ALARM)) {
+  security(); // 3 security sensor on the machine.
+  if (modes.status(ALARM)) { // ALARM MODE
     cycle.stop();
     lockAll();
     allOFF();
-  } else if (modes.status(WARMUP)) {
+    // TODO: Implement alarm indicator.
+  } else if (modes.status(WARMUP)) { // WARMUP MODE
     lockAll();
     allOFF();
-    if (cycle.cycles() > 1) {
+    if (cycle.cycles() > 0) {
       cycle.reboot(); // Restarts the cycle counter and clock.
     } else {
       delay(3000);
     }
     modes.set(STANDBY);
-  } else if (modes.status(STANDBY)) {
+  } else if (modes.status(STANDBY)) { // STANDBY MODE
+    // Buttons work.
     UNLOCK(general);
     UNLOCK(feeder);
     UNLOCK(dWelder);
-    // Buttons work.
     ButtonState(general);
     ButtonState(feeder);
     LedState(dater);
@@ -98,29 +98,27 @@ void loop() {
       unlockAll();
       modes.set(STARTING); // Change to Starting mode.
     }
-  } else if (modes.status(STARTING)) {
-    // 3 empty cycles.
+  } else if (modes.status(STARTING)) { // STARTING MODE
+    // Do 3 empty cycles.
     cycle.start(); // Starts the cycle clock, if not started yet.
     cycle.update(); // Updates the cycle clock.
-    LedState(dater);
+    LedState(dater); // Dater led via button.
     weldersPWM();
-    if (isON(feeder.out)) { // If the feeder is ON:
-      feeder.button.set(0); // Simulate button press and.
+    if (isON(feeder.out)) { // Stops the feeder if working.
+      feeder.button.set(0); // Simulate button release.
       ButtonState(feeder); // Turn the feeder OFF.
     }
-    ButtonState(general); // Turns general ON.
-    if (isOFF(general.out)) { // If general button is pressed.
+    ButtonState(general); // Turns general ON via button.
+    if (isOFF(general.out)) { // Button pressed to shutdown.
       cycle.stop();
-      modes.set(WARMUP); // Shuts down again and changes to Starting mode.
+      modes.set(WARMUP); // Shuts down.
     }
     reset();
-    if (cycle.cycles() >= 3) { // If 3 or more cycles were completed:
-      modes.set(PRODUCTION); // Changes to Prodution mode.
-    }
-  } else if (modes.status(PRODUCTION)) {
+    if (cycle.cycles() >= 3) { modes.set(PRODUCTION); }
+  } else if (modes.status(PRODUCTION)) { // PRODUCTION MODE
     // Normal production.
-    ButtonState(feeder);
-    LedState(dater);
+    ButtonState(feeder); // Feeder ON/OFF via button.
+    LedState(dater); // Dater.led ON/OFF via button.
     weldersPWM();
     Schedule(dater);
     Schedule(jaw);
@@ -130,52 +128,48 @@ void loop() {
     Schedule(welder);
     reset();
     if (cycle.cycles() > 4 && !general.button.status()) {
-      if (isON(feeder.out)) { // If the feeder is ON:
-        feeder.button.set(0); // Simulate button press and
-        ButtonState(feeder); // Turn the feeder OFF.
+      if (isON(feeder.out)) { // Shuts down the feeder if ON.
+        feeder.button.set(0);
+        ButtonState(feeder);
       }
-      if (isON(dater.out)) { // If the dater is ON:
-        dater.button.set(0); // Simulate button press and
-        ButtonState(dater); // Turn the dater OFF.
+      if (isON(dater.out)) { // Shuts down the dater if ON.
+        dater.button.set(0);
+        ButtonState(dater);
       }
       modes.set(STOPPING); // Begins soft shutdown.
     }
-  } else if (modes.status(STOPPING)) {
-    // Shutting down.
+  } else if (modes.status(STOPPING)) { // STOPPING MODE
+    // Soft shutdown.
     weldersPWM();
-    if (isON(dater.out) || !dater.lock) {
-      dater.button.set(0);
-      turnOFF(dater.led);
-      turnOFF(dater.out);
-      dater.lock = dWelder.lock = true;
-    }
-    if (isON(feeder.out) || !feeder.lock) {
-      turnOFF(feeder.out);
-      feeder.lock = true;
-    }
+    // Locks and shuts down Dater and Feeder.
+    LOCK(dater); LOCK(dWelder); LOCK(feeder);
+    feeder.button.set(0);
+    turnOFF(feeder.out);
+    dater.button.set(0);
+    turnOFF(dater.led);
+    turnOFF(dater.out);
     Schedule(jaw);
     Schedule(photocell);
     Schedule(knife);
     Schedule(cooler);
     Schedule(welder);
     reset();
-    if (cycle.now() > jaw.stop || cycle.now() == 0) {
-      modes.set(COOLDOWN);
-    }
-  } else if (modes.status(COOLDOWN)) {
+    if (cycle.now() > jaw.stop || cycle.now() == 0) { modes.set(COOLDOWN); }
+  } else if (modes.status(COOLDOWN)) { // COOLDOWN MODE
     cycle.stop();
     modes.set(WARMUP);
-  } else if (modes.status(MAINTENANCE)) {
+  } else if (modes.status(MAINTENANCE)) { // MAINTENANCE MODE
     // Manually control things.
     // Check everything individually.
-    Serial.begin(9600); // TODO: Put inside a conditional
+    // Serial.begin(9600); // TODO: Put inside a conditional
+    // TODO: Implement when/if needed.
   }
 }
 
-
 void reset() {
   if (isOFF(sensor.reset)) { cycle.reset(); }
-  if (cycle.now() == 0) { jaw.lock = knife.lock = cooler.lock = false; }
+  // Undo the lock from the Photocell every reset:
+  if (cycle.now() == 0) { UNLOCK(jaw); UNLOCK(knife); UNLOCK(cooler); }
 }
 
 void weldersPWM() {
@@ -185,32 +179,44 @@ void weldersPWM() {
 }
 
 void lockAll() {
-  vWelder.lock = hWelder.lock = dater.lock = jaw.lock = photocell.lock =
-  knife.lock = cooler.lock = welder.lock = true;
-  if (!modes.status(STANDBY)) {
-    general.lock = feeder.lock = dWelder.lock = true;
-  }
+  LOCK(vWelder);
+  LOCK(hWelder);
+  LOCK(dWelder);
+  LOCK(general);
+  LOCK(feeder);
+  LOCK(dater);
+  LOCK(jaw);
+  LOCK(photocell);
+  LOCK(knife);
+  LOCK(cooler);
+  LOCK(welder);
 }
 
 void unlockAll() {
-  vWelder.lock = hWelder.lock = dWelder.lock = general.lock = feeder.lock =
-  dater.lock = jaw.lock = photocell.lock = knife.lock = cooler.lock =
-  welder.lock = false;
+  UNLOCK(vWelder);
+  UNLOCK(hWelder);
+  UNLOCK(dWelder);
+  UNLOCK(general);
+  UNLOCK(feeder);
+  UNLOCK(dater);
+  UNLOCK(jaw);
+  UNLOCK(photocell);
+  UNLOCK(knife);
+  UNLOCK(cooler);
+  UNLOCK(welder);
 }
 
 void allOFF() {
   vWelder.pwm.off();
   hWelder.pwm.off();
+  dWelder.pwm.off();
   turnOFF(vWelder.out);
   turnOFF(hWelder.out);
   turnOFF(dWelder.out);
-  if (!modes.status(STANDBY)) {
-    dWelder.pwm.off();
-    turnOFF(general.out);
-    turnOFF(feeder.out);
-    turnOFF(dater.led);
-  }
+  turnOFF(general.out);
+  turnOFF(feeder.out);
   turnOFF(dater.out);
+  turnOFF(dater.led);
   turnOFF(jaw.out);
   turnOFF(photocell.out);
   turnOFF(knife.out);
@@ -221,9 +227,9 @@ void allOFF() {
 void updateAll() { cycle.update(); }
 
 void Schedule(struct function f) {
-  isON(dater.led) ? dater.lock = false : dater.lock = true;
-  if (isOFF(jaw.out)) { knife.lock = cooler.lock = true;}
-  if (isON(jaw.out)) { knife.lock = cooler.lock = false;}
+  isON(dater.led) ? UNLOCK(dater) : LOCK(dater);
+  if (isOFF(jaw.out)) {   LOCK(knife);   LOCK(cooler);}
+  if ( isON(jaw.out)) { UNLOCK(knife); UNLOCK(cooler);}
   unsigned long start;
   f.start == 0 ? start = 0 : start = (f.start * cycle.last()) / jaw.stop;
   unsigned long stop;
@@ -234,14 +240,14 @@ void Schedule(struct function f) {
     if (start < stop && BETWEEN(cycle.now(), start, stop)) {
       if (f.name == knife.name) { knifeSecurity(); } // Before knife is ON.
       if (f.name == photocell.name && !jaw.lock && isOFF(sensor.photocell)) {
-        jaw.lock = knife.lock = cooler.lock = true;
+        LOCK(jaw); LOCK(knife); LOCK(cooler);
       } else {
         turnON(f.out);
       }
     } else if (start > stop && !BETWEEN(cycle.now(), stop, start)) {
       if (f.name == knife.name) { knifeSecurity(); } // Before knife is ON.
       if (f.name == photocell.name && !jaw.lock && isOFF(sensor.photocell)) {
-        jaw.lock = knife.lock = cooler.lock = true;
+        LOCK(jaw); LOCK(knife); LOCK(cooler);
       } else {
         turnON(f.out);
       }

@@ -1,5 +1,5 @@
 /*
-  Emp-Ctrl-Due - v2.0a - 14/11/2014
+  Packager-Ctrl - v2.0 - 19/11/2014
   Arduino Due application for packaging machine automation.
   Created by William Koch.
   Released into the public domain.
@@ -31,7 +31,7 @@ struct sensors {
 
 // Configurations
 // VERTICAL WELDER PWM
-struct pwm vWelder {
+struct pwm vWelder { // Solda Vertical
    .name = "Vertical Welder",
     .pwm = SlowPWM(vWelder.cycle, vWelder.in, vWelder.out),
   .cycle = 1000,
@@ -41,7 +41,7 @@ struct pwm vWelder {
 };
 
 // HORIZONTAL WELDER PWM
-struct pwm hWelder {
+struct pwm hWelder { // Solda Horizontal
    .name = "Horizontal Welder",
     .pwm = SlowPWM(hWelder.cycle, hWelder.in, hWelder.out),
   .cycle = 1000,
@@ -51,7 +51,7 @@ struct pwm hWelder {
 };
 
 // DATER WELDER PWM
-struct pwm dWelder {
+struct pwm dWelder { // Solda Datador
    .name = "Dater Welder",
     .pwm = SlowPWM(dWelder.cycle, dWelder.in, dWelder.out),
   .cycle = 1000,
@@ -62,7 +62,7 @@ struct pwm dWelder {
 
 // PRODUCTION FUNCTIONS
 // GENERAL
-struct function general {
+struct function general { // Geral
    .name = "General",
  .button = OnePush(general.in),
      .in = 22,
@@ -74,7 +74,7 @@ struct function general {
 };
 
 // FEEDER
-struct function feeder {
+struct function feeder { // Dosador
    .name = "Feeder",
  .button = OnePush(feeder.in),
      .in = 24,
@@ -86,7 +86,7 @@ struct function feeder {
 };
 
 // DATER
-struct function dater {
+struct function dater { // Datador
    .name = "Dater",
  .button = OnePush(dater.in),
      .in = 26,
@@ -98,7 +98,7 @@ struct function dater {
 };
 
 // JAW
-struct function jaw {
+struct function jaw { // Mandíbula
    .name = "Jaw",
  .button = NULL,
      .in = NULL,
@@ -110,7 +110,7 @@ struct function jaw {
 };
 
 // PHOTOCELL
-struct function photocell {
+struct function photocell { // Fotocélula
    .name = "Photocell",
  .button = NULL,
      .in = 6,
@@ -122,7 +122,7 @@ struct function photocell {
 };
 
 // KNIFE
-struct function knife {
+struct function knife { // Faca
    .name = "Knife",
  .button = NULL,
      .in = NULL,
@@ -134,7 +134,7 @@ struct function knife {
 };
 
 // COOLER
-struct function cooler {
+struct function cooler { // Refrigeração
    .name = "Cooler",
  .button = NULL,
      .in = NULL,
@@ -146,7 +146,7 @@ struct function cooler {
 };
 
 // WELDERS
-struct function welder {
+struct function welder { // Solda
    .name = "Welder",
  .button = NULL,
      .in = NULL,
@@ -158,7 +158,7 @@ struct function welder {
 };
 
 // SENSORS
-struct sensors sensor {
+struct sensors sensor { // Sensores
       .reset = 28,
   .photocell = photocell.in,
         .jaw = 2,
