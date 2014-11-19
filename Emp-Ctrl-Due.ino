@@ -102,15 +102,16 @@ void loop() {
     // 3 empty cycles.
     cycle.start(); // Starts the cycle clock, if not started yet.
     cycle.update(); // Updates the cycle clock.
+    LedState(dater);
     weldersPWM();
     if (isON(feeder.out)) { // If the feeder is ON:
-      feeder.button.next(); // Simulate button press and.
+      feeder.button.set(0); // Simulate button press and.
       ButtonState(feeder); // Turn the feeder OFF.
     }
     ButtonState(general); // Turns general ON.
     if (isOFF(general.out)) { // If general button is pressed.
       cycle.stop();
-      modes.set(STANDBY); // Shuts down again and changes to Starting mode.
+      modes.set(WARMUP); // Shuts down again and changes to Starting mode.
     }
     reset();
     if (cycle.cycles() >= 3) { // If 3 or more cycles were completed:
@@ -130,11 +131,11 @@ void loop() {
     reset();
     if (cycle.cycles() > 4 && !general.button.status()) {
       if (isON(feeder.out)) { // If the feeder is ON:
-        feeder.button.next(); // Simulate button press and
+        feeder.button.set(0); // Simulate button press and
         ButtonState(feeder); // Turn the feeder OFF.
       }
       if (isON(dater.out)) { // If the dater is ON:
-        dater.button.next(); // Simulate button press and
+        dater.button.set(0); // Simulate button press and
         ButtonState(dater); // Turn the dater OFF.
       }
       modes.set(STOPPING); // Begins soft shutdown.
@@ -143,12 +144,14 @@ void loop() {
     // Shutting down.
     weldersPWM();
     if (isON(dater.out) || !dater.lock) {
-      dater.lock = true;
+      dater.button.set(0);
+      turnOFF(dater.led);
       turnOFF(dater.out);
+      dater.lock = dWelder.lock = true;
     }
-    if (!feeder.lock) {
+    if (isON(feeder.out) || !feeder.lock) {
+      turnOFF(feeder.out);
       feeder.lock = true;
-      turnOFF(dater.out);
     }
     Schedule(jaw);
     Schedule(photocell);
@@ -171,10 +174,8 @@ void loop() {
 
 
 void reset() {
-  if (isOFF(sensor.reset)) {
-    cycle.reset();
-    jaw.lock = knife.lock = cooler.lock = false;
-  }
+  if (isOFF(sensor.reset)) { cycle.reset(); }
+  if (cycle.now() == 0) { jaw.lock = knife.lock = cooler.lock = false; }
 }
 
 void weldersPWM() {
@@ -221,6 +222,8 @@ void updateAll() { cycle.update(); }
 
 void Schedule(struct function f) {
   isON(dater.led) ? dater.lock = false : dater.lock = true;
+  if (isOFF(jaw.out)) { knife.lock = cooler.lock = true;}
+  if (isON(jaw.out)) { knife.lock = cooler.lock = false;}
   unsigned long start;
   f.start == 0 ? start = 0 : start = (f.start * cycle.last()) / jaw.stop;
   unsigned long stop;
