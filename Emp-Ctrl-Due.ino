@@ -33,7 +33,8 @@
 #define   isOFF(x)        (digitalRead(x) == OFF)
 #define  turnON(x)        if (isOFF(x)) {digitalWrite(x, ON);}
 #define turnOFF(x)        if  (isON(x)) {digitalWrite(x, OFF);}
-#define ButtonState(x)    digitalWrite(x.out, x.button.state())
+#define  UNLOCK(x)        if   (x.lock) {x.lock = false;}
+#define ButtonState(x)    if (!x.lock) {digitalWrite(x.out, x.button.state());}
 #define    LedState(x)    digitalWrite(x.led, x.button.state())
 
 Modus modes(7);
@@ -61,7 +62,6 @@ void setup() {
   OUT(dater.out);
   OUT(dater.led);
   OUT(jaw.out);
-  OUT(photocell.out);
   OUT(knife.out);
   OUT(cooler.out);
   OUT(welder.out);
@@ -79,14 +79,21 @@ void loop() {
   } else if (modes.status(WARMUP)) {
     lockAll();
     allOFF();
-    delay(3000);
+    if (cycle.cycles() > 1) {
+      cycle.reboot(); // Restarts the cycle counter and clock.
+    } else {
+      delay(3000);
+    }
     modes.set(STANDBY);
   } else if (modes.status(STANDBY)) {
-    lockAll();
-    allOFF();
+    UNLOCK(general);
+    UNLOCK(feeder);
+    UNLOCK(dWelder);
     // Buttons work.
-    ButtonState(feeder);
     ButtonState(general);
+    ButtonState(feeder);
+    LedState(dater);
+    weldersPWM();
     if (isON(general.out)) { // If general is ON:
       unlockAll();
       modes.set(STARTING); // Change to Starting mode.
@@ -113,7 +120,6 @@ void loop() {
     // Normal production.
     ButtonState(feeder);
     LedState(dater);
-
     weldersPWM();
     Schedule(dater);
     Schedule(jaw);
@@ -155,12 +161,7 @@ void loop() {
     }
   } else if (modes.status(COOLDOWN)) {
     cycle.stop();
-    allOFF();
-    turnON(cooler.out);
-    delay(1000);
-    turnOFF(cooler.out);
-    cycle.reboot(); // Restarts the cycle counter and clock.
-    modes.set(STANDBY);
+    modes.set(WARMUP);
   } else if (modes.status(MAINTENANCE)) {
     // Manually control things.
     // Check everything individually.
@@ -169,18 +170,25 @@ void loop() {
 }
 
 
-void reset() { if (isOFF(sensor.reset)) { cycle.reset(); } }
+void reset() {
+  if (isOFF(sensor.reset)) {
+    cycle.reset();
+    jaw.lock = knife.lock = cooler.lock = false;
+  }
+}
 
 void weldersPWM() {
   !vWelder.lock ? vWelder.pwm.on() : vWelder.pwm.off();
   !hWelder.lock ? hWelder.pwm.on() : hWelder.pwm.off();
-  !dWelder.lock ? dWelder.pwm.on() : dWelder.pwm.off();
+  (!dWelder.lock && isON(dater.led)) ? dWelder.pwm.on() : dWelder.pwm.off();
 }
 
 void lockAll() {
-  vWelder.lock = hWelder.lock = dWelder.lock = general.lock = feeder.lock =
-  dater.lock = jaw.lock = photocell.lock = knife.lock = cooler.lock =
-  welder.lock = true;
+  vWelder.lock = hWelder.lock = dater.lock = jaw.lock = photocell.lock =
+  knife.lock = cooler.lock = welder.lock = true;
+  if (!modes.status(STANDBY)) {
+    general.lock = feeder.lock = dWelder.lock = true;
+  }
 }
 
 void unlockAll() {
@@ -192,11 +200,11 @@ void unlockAll() {
 void allOFF() {
   vWelder.pwm.off();
   hWelder.pwm.off();
-  dWelder.pwm.off();
   turnOFF(vWelder.out);
   turnOFF(hWelder.out);
   turnOFF(dWelder.out);
   if (!modes.status(STANDBY)) {
+    dWelder.pwm.off();
     turnOFF(general.out);
     turnOFF(feeder.out);
     turnOFF(dater.led);
@@ -218,15 +226,25 @@ void Schedule(struct function f) {
   unsigned long stop;
   f.stop == 0 ? stop = 0 : stop = (f.stop * cycle.last()) / jaw.stop;
   if (f.lock) { // Locked function?
-    if (isON(f.out)) { turnOFF(f.out); }
+    turnOFF(f.out);
   } else { // Unlocked function.
     if (start < stop && BETWEEN(cycle.now(), start, stop)) {
       if (f.name == knife.name) { knifeSecurity(); } // Before knife is ON.
-      turnON(f.out);
+      if (f.name == photocell.name && !jaw.lock && isOFF(sensor.photocell)) {
+        jaw.lock = knife.lock = cooler.lock = true;
+      } else {
+        turnON(f.out);
+      }
     } else if (start > stop && !BETWEEN(cycle.now(), stop, start)) {
       if (f.name == knife.name) { knifeSecurity(); } // Before knife is ON.
-      turnON(f.out);
-    } else { if (isON(f.out)) { turnOFF(f.out); } }
+      if (f.name == photocell.name && !jaw.lock && isOFF(sensor.photocell)) {
+        jaw.lock = knife.lock = cooler.lock = true;
+      } else {
+        turnON(f.out);
+      }
+    } else {
+      turnOFF(f.out);
+    }
   }
 }
 
