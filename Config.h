@@ -33,7 +33,7 @@ struct sensors {
 // VERTICAL WELDER PWM | Solda Vertical
 struct pwm vWelder {
    .name = "Vertical Welder",
-    .pwm = SlowPWM(vWelder.cycle, vWelder.in, vWelder.out),
+    .pwm = SlowPWM(vWelder.cycle, vWelder.in, vWelder.out, 12),
   .cycle = 1000,
      .in = A0,
     .out = 33,
@@ -43,7 +43,7 @@ struct pwm vWelder {
 // HORIZONTAL WELDER PWM | Solda Horizontal
 struct pwm hWelder {
    .name = "Horizontal Welder",
-    .pwm = SlowPWM(hWelder.cycle, hWelder.in, hWelder.out),
+    .pwm = SlowPWM(hWelder.cycle, hWelder.in, hWelder.out, 12),
   .cycle = 1000,
      .in = A1,
     .out = 35,
@@ -53,7 +53,7 @@ struct pwm hWelder {
 // DATER WELDER PWM | Solda Datador
 struct pwm dWelder {
    .name = "Dater Welder",
-    .pwm = SlowPWM(dWelder.cycle, dWelder.in, dWelder.out),
+    .pwm = SlowPWM(dWelder.cycle, dWelder.in, dWelder.out, 12),
   .cycle = 1000,
      .in = A2,
     .out = 37,

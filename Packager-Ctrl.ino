@@ -42,6 +42,7 @@ Modus modes(7);
 Cyclic cycle(2000, 900);
 
 void setup() {
+  analogReadResolution(12); // 12bits analog resolution.
   // BUTTONS
   BUTTON(general.in);
   BUTTON(dater.in);
@@ -75,7 +76,8 @@ void loop() {
     cycle.stop();
     lockAll();
     allOFF();
-    // TODO: Implement alarm indicator.
+    digitalWrite(dater.led, !digitalRead(dater.led));
+    delay(500);
   } else if (modes.status(WARMUP)) { // WARMUP MODE
     lockAll();
     allOFF();
@@ -216,7 +218,7 @@ void allOFF() {
   turnOFF(general.out);
   turnOFF(feeder.out);
   turnOFF(dater.out);
-  turnOFF(dater.led);
+  if (!modes.status(ALARM)) {turnOFF(dater.led);}
   turnOFF(jaw.out);
   turnOFF(photocell.out);
   turnOFF(knife.out);
@@ -258,11 +260,13 @@ void Schedule(struct function f) {
 }
 
 void security() {
-  byte s1 = isON(sensor.security1);
-  byte s2 = isON(sensor.security2);
-  byte s3 = isON(sensor.security3);
-  if (!s1 || !s2 || !s3) { // Negated because of INPUT_PULLUP.
-    if (!modes.status(ALARM)) { modes.set(ALARM); }
+  if (!modes.status(ALARM)) {
+    byte s1 = isON(sensor.security1);
+    byte s2 = isON(sensor.security2);
+    byte s3 = isON(sensor.security3);
+    if (!s1 || !s2 || !s3) { // Negated because of INPUT_PULLUP.
+      modes.set(ALARM);
+    }
   }
 }
 
