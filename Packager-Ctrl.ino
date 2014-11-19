@@ -33,8 +33,8 @@
 #define   isOFF(x)        (digitalRead(x) == OFF)
 #define  turnON(x)        if (isOFF(x)) {digitalWrite(x, ON);}
 #define turnOFF(x)        if  (isON(x)) {digitalWrite(x, OFF);}
-#define  UNLOCK(x)        if   (x.lock) {x.lock = false;}
-#define    LOCK(x)        if  (!x.lock) {x.lock = true;}
+#define  UNLOCK(x)        (x.lock = false)
+#define    LOCK(x)        (x.lock = true)
 #define ButtonState(x)    if (!x.lock) {digitalWrite(x.out, x.button.state());}
 #define    LedState(x)    digitalWrite(x.led, x.button.state())
 

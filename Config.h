@@ -30,8 +30,8 @@ struct sensors {
 
 
 // Configurations
-// VERTICAL WELDER PWM
-struct pwm vWelder { // Solda Vertical
+// VERTICAL WELDER PWM | Solda Vertical
+struct pwm vWelder {
    .name = "Vertical Welder",
     .pwm = SlowPWM(vWelder.cycle, vWelder.in, vWelder.out),
   .cycle = 1000,
@@ -40,8 +40,8 @@ struct pwm vWelder { // Solda Vertical
    .lock = false
 };
 
-// HORIZONTAL WELDER PWM
-struct pwm hWelder { // Solda Horizontal
+// HORIZONTAL WELDER PWM | Solda Horizontal
+struct pwm hWelder {
    .name = "Horizontal Welder",
     .pwm = SlowPWM(hWelder.cycle, hWelder.in, hWelder.out),
   .cycle = 1000,
@@ -50,8 +50,8 @@ struct pwm hWelder { // Solda Horizontal
    .lock = false
 };
 
-// DATER WELDER PWM
-struct pwm dWelder { // Solda Datador
+// DATER WELDER PWM | Solda Datador
+struct pwm dWelder {
    .name = "Dater Welder",
     .pwm = SlowPWM(dWelder.cycle, dWelder.in, dWelder.out),
   .cycle = 1000,
@@ -61,8 +61,8 @@ struct pwm dWelder { // Solda Datador
 };
 
 // PRODUCTION FUNCTIONS
-// GENERAL
-struct function general { // Geral
+// GENERAL | Geral
+struct function general {
    .name = "General",
  .button = OnePush(general.in),
      .in = 22,
@@ -73,8 +73,8 @@ struct function general { // Geral
    .lock = false
 };
 
-// FEEDER
-struct function feeder { // Dosador
+// FEEDER | Dosador
+struct function feeder {
    .name = "Feeder",
  .button = OnePush(feeder.in),
      .in = 24,
@@ -85,8 +85,8 @@ struct function feeder { // Dosador
    .lock = false
 };
 
-// DATER
-struct function dater { // Datador
+// DATER | Datador
+struct function dater {
    .name = "Dater",
  .button = OnePush(dater.in),
      .in = 26,
@@ -97,8 +97,8 @@ struct function dater { // Datador
    .lock = false
 };
 
-// JAW
-struct function jaw { // Mandíbula
+// JAW | Mandíbula
+struct function jaw {
    .name = "Jaw",
  .button = NULL,
      .in = NULL,
@@ -109,8 +109,8 @@ struct function jaw { // Mandíbula
    .lock = false
 };
 
-// PHOTOCELL
-struct function photocell { // Fotocélula
+// PHOTOCELL | Fotocélula
+struct function photocell {
    .name = "Photocell",
  .button = NULL,
      .in = 6,
@@ -121,8 +121,8 @@ struct function photocell { // Fotocélula
    .lock = false
 };
 
-// KNIFE
-struct function knife { // Faca
+// KNIFE | Faca
+struct function knife {
    .name = "Knife",
  .button = NULL,
      .in = NULL,
@@ -133,8 +133,8 @@ struct function knife { // Faca
    .lock = false
 };
 
-// COOLER
-struct function cooler { // Refrigeração
+// COOLER | Refrigeração
+struct function cooler {
    .name = "Cooler",
  .button = NULL,
      .in = NULL,
@@ -145,8 +145,8 @@ struct function cooler { // Refrigeração
    .lock = false
 };
 
-// WELDERS
-struct function welder { // Solda
+// WELDERS | Solda
+struct function welder {
    .name = "Welder",
  .button = NULL,
      .in = NULL,
@@ -157,8 +157,8 @@ struct function welder { // Solda
    .lock = false
 };
 
-// SENSORS
-struct sensors sensor { // Sensores
+// SENSORS | Sensores
+struct sensors sensor {
       .reset = 28,
   .photocell = photocell.in,
         .jaw = 2,
